@@ -72,7 +72,8 @@ select = [
     "W"       # pycodestyle warnings
 ]
 ignore = [
-    "S101" # assert
+    "S101", # assert
+    "RUF003" # hyphens
 ]
 
 [tool.ruff.format]
