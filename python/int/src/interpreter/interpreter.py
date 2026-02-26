@@ -1,3 +1,12 @@
+"""
+This module contains the main logic of the interpreter.
+
+IPP: You must definitely modify this file. Bend it to your will.
+
+Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author:
+"""
+
 import logging
 from pathlib import Path
 from typing import TextIO
@@ -25,6 +34,9 @@ class Interpreter:
         """
         Reads the source SOL-XML file and stores it as the target program for this interpreter.
         If any program was previously loaded, it is replaced by the new one.
+
+        IPP: If you wish to run static checks on the program before execution, this is a good place
+             to call them from.
         """
         logger.info("Opening source file: %s", source_file_path)
         try:
@@ -45,3 +57,5 @@ class Interpreter:
         Executes the currently loaded program, using the provided input stream as standard input.
         """
         logger.info("Executing program")
+        # TODO: Your logic goes here.
+

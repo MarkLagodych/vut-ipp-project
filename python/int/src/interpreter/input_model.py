@@ -1,3 +1,13 @@
+"""
+This module defines the data models for representing SOL-XML programs in memory,
+using Pydantic and pydantic-xml.
+
+IPP: You should not need to modify this file. If you find it necessary to modify it,
+     consult your intentions on the project forum first.
+
+Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+"""
+
 from typing import Any
 
 from pydantic import model_validator

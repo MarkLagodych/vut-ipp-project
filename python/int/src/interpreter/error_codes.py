@@ -1,3 +1,13 @@
+"""
+This module defines the ErrorCode enum, which contains all the error codes specified by
+the project assignment.
+
+IPP: You should not need to modify this file. However, you may add additional helper methods
+     to the ErrorCode class.
+
+Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+"""
+
 import sys
 from enum import IntEnum
 from typing import NoReturn
