@@ -2,14 +2,14 @@
 
 ## Nástroje pro kontrolu kvalitu kódu
 
-V obou šablonách jsou pomocí souboru `pyproject.toml` nakonfigurovány nástroje ruff a mypy, které
+V obou šablonách jsou pomocí souboru `pyproject.toml` nakonfigurovány nástroje Ruff a mypy, které
 máte využít pro kontrolu kvality kódu a pro kontrolu typových anotací. Do této konfigurace je
 **zakázáno zasahovat** (bude kontrolováno).
 
 Jakmile jsou nástroje nainstalovány ve vašem pythonovém prostředí, lze je spustit z kořenového 
 adresáře projektu pomocí `ruff` a `mypy` (viz níže). Doporučujeme oba nástroje spouštět **pravidelně**
 v průběhu vývoje – jinak se chyby zvládnou velice rychle nahromadit. Také doporučujeme využít rozšíření
-pro různá IDE či editory kódu existují rozšíření, která umí ruff integrovat přímo do svých kontrol kódu
+pro různá IDE či editory kódu existují rozšíření, která umí Ruff integrovat přímo do svých kontrol kódu
 (např. pro IntelliJ PyCharm doporučuji rozšíření [RyeCharm](https://plugins.jetbrains.com/plugin/25230-ryecharm)).
 
 Velmi doporučujeme využít nástroj [pre-commit](https://pre-commit.com/), který se integruje s gitem
@@ -17,11 +17,22 @@ a při každém commitu automaticky spustí kontroly oběma nástroji. V přípa
 nedovolí (bez použití přepínače `--no-verify`) commit ani vytvořit. Příklad konfiguračího souboru
 pro tento nástroj najdete v tomto adresáři v souboru `example-pre-commit-config.yaml`.
 
+### Povolené výjimky z automatických kontrol kvality
+
+Ve výjimečných případech můžete ignorovat Ruff pravidlo [C901](https://docs.astral.sh/ruff/rules/complex-structure/),
+které upozorňuje na příliš komplexní funkce podle jisté metriky. V případě výskytu tohoto hlášení
+doporučujeme pořádně se zamyslet, zda opravdu nelze kód napsat jinak. Pokud ne, obraťte se s žádostí
+o potvrzení na cvičicí (na fóru).
+
+Pokud vám některá pravidla budou připadat příliš restriktivní, obraťte se na nás na fóru. V případě 
+dobré argumentace se zde pak mohou objevit další povolené výjimky. Nástroje pro kontrolu kvality kódu 
+nemusí mít vždycky pravdu.
+
 ## Správa projektu a závislostí
 
 V obou šablonách jsou povinně využity knihovny třetích stran ([Pydantic](https://docs.pydantic.dev/latest/),
 v případě interpretu taky [pydantic-xml](https://pydantic-xml.readthedocs.io/en/latest/)). 
-Požadované nástroje ruff a mypy se také instalují jako pythonové balíčky. Z tohoto důvodu budete
+Požadované nástroje Ruff a mypy se také instalují jako pythonové balíčky. Z tohoto důvodu budete
 muset zvolit nějaký způsob správy pythonového prostředí, které budou k dispozici i při běhu
 (v kontejneru). V tomto směru doporučujeme zvolit jednu z možností:
 - klasická systémová instalace Pythonu a správce balíčků **pip**, přičemž využijete tzv.
@@ -30,7 +41,7 @@ muset zvolit nějaký způsob správy pythonového prostředí, které budou k d
   i závislostí.
 
 V obou šablonách jsou předpřipraveny soubory `requirements.txt` (závislosti nutné při běhu)
-a `requirements-dev.txt` (závislosti nutné jen pro vývoj – ruff a mypy), zároveň je připraven také
+a `requirements-dev.txt` (závislosti nutné jen pro vývoj – Ruff a mypy), zároveň je připraven také
 projektový soubor `pyproject.toml`, který lze přímo využít se správcem projektu **uv**.
 
 Příklad vytvoření a použití virtuálního prostředí:
