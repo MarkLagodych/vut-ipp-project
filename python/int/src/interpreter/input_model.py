@@ -5,8 +5,10 @@ from pydantic_xml import BaseXmlModel, attr, element
 
 # --- Leaf nodes ---
 
+
 class OrderedElementXmlModel(BaseXmlModel):
     """Represents any XML element with an 'order' attribute."""
+
     order: int = attr(name="order")
 
 
@@ -37,12 +39,14 @@ class Arg(OrderedElementXmlModel, tag="arg"):
 
 # --- Helpers ---
 
+
 def sort_by_order[T: OrderedElementXmlModel](items: list[T]) -> list[T]:
     """Sorts list of elements that carry an `order` attribute."""
     return sorted(items, key=lambda x: x.order)
 
 
 # --- Expression and statements ---
+
 
 class Expr(BaseXmlModel, tag="expr"):
     """
@@ -81,7 +85,6 @@ class Send(BaseXmlModel, tag="send"):
     selector: str = attr(name="selector")
     receiver: Expr = element(tag="expr")
     args: list[Arg] = element(tag="arg", default_factory=list)
-
 
     def model_post_init(self, context: Any) -> None:
         """
@@ -128,6 +131,7 @@ class Block(BaseXmlModel, tag="block"):
 
 # --- Program structure ---
 
+
 class Method(BaseXmlModel, tag="method"):
     """
     <method selector="...">
@@ -163,6 +167,7 @@ class Program(BaseXmlModel, tag="program"):
     language: str = attr(name="language")
     description: str | None = attr(name="description", default=None)
     classes: list[ClassDef] = element(tag="class", default_factory=list)
+
 
 # Resolve forward references
 Expr.model_rebuild()

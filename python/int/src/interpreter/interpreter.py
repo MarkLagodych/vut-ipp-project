@@ -12,6 +12,7 @@ from interpreter.input_model import Program
 
 logger = logging.getLogger(__name__)
 
+
 class Interpreter:
     """
     The main interpreter class, responsible for loading the source file and executing the program.
@@ -29,14 +30,15 @@ class Interpreter:
         try:
             xml_tree = etree.parse(source_file_path)
         except ParseError as e:
-            raise InterpreterError(error_code=ErrorCode.INT_XML,
-                                   message="Error parsing input XML") from e
+            raise InterpreterError(
+                error_code=ErrorCode.INT_XML, message="Error parsing input XML"
+            ) from e
         try:
             self.current_program = Program.from_xml_tree(xml_tree.getroot())  # type: ignore
         except ValidationError as e:
-            raise InterpreterError(error_code=ErrorCode.INT_STRUCTURE,
-                                   message="Invalid SOL-XML structure") from e
-
+            raise InterpreterError(
+                error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
+            ) from e
 
     def execute(self, input_io: TextIO) -> None:
         """
