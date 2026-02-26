@@ -29,7 +29,9 @@ class ErrorCode(IntEnum):
     INT_INST_ATTR = 54  # attempt to create instance attribute colliding with a method
 
     def fire(self, message: str | None = None) -> NoReturn:
-        """Print the error message (if specified) and exit with the appropriate code."""
+        """Prints the error message (if specified) and exits with the appropriate code."""
         if message:
-            print(message, file=sys.stderr)
+            print(f"Error {self.value}: {message}", file=sys.stderr)
+        else:
+            print(f"Error {self.value} ({self.name})", file=sys.stderr)
         exit(self.value)
