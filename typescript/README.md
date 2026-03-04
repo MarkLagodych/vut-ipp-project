@@ -37,5 +37,8 @@ npm install
 # přeloží TS kód
 npm run build
 # spustí přeložený skript
-node dist/tester.js
+node dist/tester.js [argumenty pro skript]
+
+# alternativa (zkratka pro předchozí dva příkazy):
+npm start -- [argumenty pro skript]
 ```
