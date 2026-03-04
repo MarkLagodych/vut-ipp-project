@@ -86,7 +86,6 @@ def parse_arguments() -> CliArguments:
         "-i",
         "--include",
         action="append",
-        nargs="*",
         help="Include only test cases with the specified name or category. "
         "Can be used multiple times to specify multiple criteria."
         "Can be combined with -ic and -it.",
@@ -95,7 +94,6 @@ def parse_arguments() -> CliArguments:
         "-ic",
         "--include-category",
         action="append",
-        nargs="*",
         help="Include only test cases with the specified category. "
         "Can be used multiple times to specify multiple accepted categories. "
         "Can be combined with -it and -i.",
@@ -104,7 +102,6 @@ def parse_arguments() -> CliArguments:
         "-it",
         "--include-test",
         action="append",
-        nargs="*",
         help="Include only test cases with the specified name. "
         "Can be used multiple times to specify multiple accepted names. "
         "Can be combined with -ic and -i.",
@@ -113,7 +110,6 @@ def parse_arguments() -> CliArguments:
         "-e",
         "--exclude",
         action="append",
-        nargs="*",
         help="Exclude test cases with the specified name or category. "
         "Can be used multiple times to specify multiple criteria."
         "Can be combined with -ic and -it.",
@@ -122,7 +118,6 @@ def parse_arguments() -> CliArguments:
         "-ec",
         "--exclude-category",
         action="append",
-        nargs="*",
         help="Exclude test cases with the specified category. "
         "Can be used multiple times to specify multiple accepted categories. "
         "Can be combined with -it and -i.",
