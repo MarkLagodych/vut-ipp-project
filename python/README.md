@@ -52,7 +52,7 @@ python3 -m venv .venv
 # upraví aktuální sezení shellu tak, že používá Python z virtuálního prostředí
 source .venv/bin/activate
 # nainstaluje balíčky
-pip install -r requirements.txt requirements-dev.txt
+pip install -r requirements.txt -r requirements-dev.txt
 # ruff a mypy
 ruff check
 ruff format
