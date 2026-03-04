@@ -82,3 +82,7 @@ quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
 docstring-code-line-length = 79
+
+[tool.ruff.lint.mccabe]
+# Flag complexity errors (`C901`) whenever the complexity level exceeds 15.
+max-complexity = 15
