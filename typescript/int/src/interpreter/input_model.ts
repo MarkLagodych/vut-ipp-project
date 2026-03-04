@@ -6,6 +6,9 @@
  *      consult your intentions on the project forum first.
  *
  * Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+ *
+ * AI usage notice: The author used OpenAI Codex to create the implementation of this
+ *                  module based on its Python counterpart.
  */
 
 import { XMLParser, XMLValidator } from "fast-xml-parser";

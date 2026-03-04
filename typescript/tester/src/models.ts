@@ -2,7 +2,10 @@
  * This module defines the data models used for representing test cases and their results.
  * It serves as the reference for the testing tool's expected output data structure.
  *
- * Author: Ondrej Ondryas <iondryas@fit.vut.cz>
+ * Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+ *
+ * AI usage notice: The author used OpenAI Codex to create the implementation of this
+ *                  module based on its Python counterpart.
  */
 
 // ---- Test cases ----

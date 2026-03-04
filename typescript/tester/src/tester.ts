@@ -8,7 +8,10 @@
  *      Below, you have some code to get you started with the CLI argument parsing and logging setup,
  *      but you are **free to modify it** in whatever way you like.
  *
- * Author: Ondrej Ondryas <iondryas@fit.vut.cz>
+ * Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+ *
+ * AI usage notice: The author used OpenAI Codex to create the implementation of this
+ *                  module based on its Python counterpart.
  */
 
 import { existsSync, lstatSync, writeFileSync } from "node:fs";

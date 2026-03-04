@@ -5,6 +5,9 @@
  * IPP: You should not need to modify this file.
  *
  * Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+ *
+ * AI usage notice: The author used OpenAI Codex to create the implementation of this
+ *                  module based on its Python counterpart.
  */
 
 import { readFileSync, statSync } from "node:fs";
