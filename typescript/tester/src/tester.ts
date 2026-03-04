@@ -14,10 +14,19 @@
 import { existsSync, lstatSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { getLogger, LogLevel, setLogLevel } from "./logging.js";
 import { TestReport } from "./models.js";
 
-const logger = getLogger("main");
+import { pino } from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      destination: 2,
+    },
+  },
+});
 
 interface CliArguments {
   tests_dir: string;
@@ -310,7 +319,7 @@ function parseArguments(): CliArguments {
       process.exit(1);
     }
     if (existsSync(args.output)) {
-      logger.warning("The output file will be overwritten:", args.output);
+      logger.warn("The output file will be overwritten: %s", args.output);
     }
   }
 
@@ -325,16 +334,17 @@ function main(): void {
 
   // Set up logging
   // IPP: You do not have to use logging - but it is the recommended practice.
-  setLogLevel(LogLevel.WARNING);
+  //      See https://getpino.io/#/docs/api for more information.
+  logger.level = "warn";
 
   // Parse the CLI arguments
   const args = parseArguments();
 
   // Enable debug or info logging if the verbose flag was set twice or once
   if (args.verbose >= 2) {
-    setLogLevel(LogLevel.DEBUG);
+    logger.level = "debug";
   } else if (args.verbose === 1) {
-    setLogLevel(LogLevel.INFO);
+    logger.level = "info;";
   }
 
   // TODO: Your code for discovering and executing the test cases goes here.

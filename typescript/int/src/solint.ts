@@ -10,10 +10,20 @@
 import { readFileSync, statSync } from "node:fs";
 import { Readable } from "node:stream";
 
-import { ErrorCode } from "./interpreter/error_codes.js";
+import { ErrorCode, fireError } from "./interpreter/error_codes.js";
 import { InterpreterError } from "./interpreter/exceptions.js";
 import { Interpreter } from "./interpreter/interpreter.js";
-import { getLogger, LogLevel, setLogLevel, type Logger } from "./interpreter/logging.js";
+import { pino } from "pino";
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      destination: 2,
+    },
+  },
+});
 
 interface CliArguments {
   source: string;
@@ -86,10 +96,8 @@ function parseArgumentsOrFire(argv: string[]): CliArguments {
   try {
     return parseArguments(argv);
   } catch {
-    ErrorCode.GENERAL_OPTIONS.fire();
+    fireError(ErrorCode.GENERAL_OPTIONS);
   }
-
-  throw new Error("Unreachable");
 }
 
 function isFile(path: string): boolean {
@@ -103,27 +111,27 @@ function isFile(path: string): boolean {
 function validateInputPaths(args: CliArguments): void {
   // Check that the provided paths are valid files (exist and are not directories)
   if (!isFile(args.source)) {
-    ErrorCode.GENERAL_INPUT.fire("Source file does not exist or is not a file.");
+    fireError(ErrorCode.GENERAL_INPUT, "Source file does not exist or is not a file.");
   }
 
   if (args.input !== null && !isFile(args.input)) {
-    ErrorCode.GENERAL_INPUT.fire("Input file does not exist or is not a file.");
+    fireError(ErrorCode.GENERAL_INPUT, "Input file does not exist or is not a file.");
   }
 }
 
 function configureVerboseLogging(verboseCount: number): void {
   // Enable debug or info logging if the verbose flag was set twice or once
   if (verboseCount >= 2) {
-    setLogLevel(LogLevel.DEBUG);
+    logger.level = "debug";
     return;
   }
 
   if (verboseCount === 1) {
-    setLogLevel(LogLevel.INFO);
+    logger.level = "info";
     return;
   }
 
-  setLogLevel(LogLevel.WARNING);
+  logger.level = "warn";
 }
 
 function createInputStream(inputPath: string | null): Readable {
@@ -137,14 +145,14 @@ function createInputStream(inputPath: string | null): Readable {
   return Readable.from("");
 }
 
-function handleUnhandledError(error: unknown, logger: Logger): void {
+function handleUnhandledError(error: unknown): void {
   if (error instanceof InterpreterError) {
-    logger.debug("InterpreterError", error);
-    error.errorCode.fire(error.message);
+    logger.debug(error);
+    fireError(error.errorCode, error.message);
   }
 
-  logger.error("Unhandled exception during interpretation", error);
-  ErrorCode.GENERAL_OTHER.fire(error instanceof Error ? error.message : String(error));
+  logger.error(error, "Unhandled exception during interpretation");
+  fireError(ErrorCode.GENERAL_OTHER, error instanceof Error ? error.message : String(error));
 }
 
 function main(): void {
@@ -157,21 +165,20 @@ function main(): void {
 
   // Set up logging
   // IPP: You do not have to use logging - but it is the recommended practice.
-  const logger = getLogger("main");
-
+  //      See https://getpino.io/#/docs/api for more information.
   const args = parseArgumentsOrFire(process.argv.slice(2));
   validateInputPaths(args);
   configureVerboseLogging(args.verbose);
 
   // Create an instance of the interpreter
-  const interpreter = new Interpreter();
+  const interpreter = new Interpreter(logger);
 
   try {
     // Load the program from the source file
     interpreter.loadProgram(args.source);
     interpreter.execute(createInputStream(args.input));
   } catch (error) {
-    handleUnhandledError(error, logger);
+    handleUnhandledError(error);
   }
 }
 

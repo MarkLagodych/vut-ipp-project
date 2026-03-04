@@ -18,9 +18,7 @@ import {
   parseProgramXml,
   type Program,
 } from "./input_model.js";
-import { getLogger } from "./logging.js";
-
-const logger = getLogger("interpreter");
+import { Logger } from "pino";
 
 export class Interpreter {
   /**
@@ -28,6 +26,11 @@ export class Interpreter {
    */
 
   public currentProgram: Program | null = null;
+  private logger: Logger;
+
+  constructor(logger: Logger) {
+    this.logger = logger.child({ module: "interpreter" });
+  }
 
   public loadProgram(sourceFilePath: string): void {
     /**
@@ -37,7 +40,7 @@ export class Interpreter {
      * IPP: If you wish to run static checks on the program before execution, this is a good place
      *      to call them from.
      */
-    logger.info("Opening source file:", sourceFilePath);
+    this.logger.info("Opening source file: %s", sourceFilePath);
 
     try {
       const sourceText = readFileSync(sourceFilePath, "utf8");
@@ -57,7 +60,7 @@ export class Interpreter {
     /**
      * Executes the currently loaded program, using the provided input stream as standard input.
      */
-    logger.info("Executing program");
+    this.logger.info("Executing program");
     void inputIo;
 
     // TODO: Your logic goes here.
