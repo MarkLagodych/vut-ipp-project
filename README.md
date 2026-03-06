@@ -27,6 +27,7 @@ Níže jsou uvedeny (v sestupném pořadí dle data) „zásadnější“ změny
 
 | Datum    | Commit    | Popis
 | -------- | --------- | -----
+| 26-03-06 | `c153e76` | Úprava implementace výstupního modelu testovacího nástroje (nemá žádný dopad na strukturu či použití).
 | 26-03-06 | `67fd08c` | V Py šabloně interpretu odstraněny uvozovky kolem dopředných typových anotací (v Py 3.14 není vyžadováno).
 | 26-03-04 | `71dc176` | Úprava nastavení pravidel pro kontrolu komplexity kódu (nyní konzistentní mezi TS a Py).
 | 26-03-04 | `9307635` | Oprava špatné požadované verze Pythonu v `pyproject.toml` souborech (zadání vyžaduje 3.14).
