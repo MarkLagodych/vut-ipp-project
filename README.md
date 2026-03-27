@@ -25,6 +25,8 @@ Níže jsou uvedeny (v sestupném pořadí dle data) „zásadnější“ změny
 
 | Datum    | Commit    | Popis
 | -------- | --------- | -----
+| 26-03-27 | `be87d45` | V Py šabloně testovacího nástroje povoleno ignorovat chybová hlášení související se spouštěním procesů.
+| 26-03-27 | `1dc41a1` | V PHP šabloně testovacího nástroje odstraněna pravidla zamezující spouštění nových procesů.
 | 26-03-08 | `64b94c1` | V Py šabloně interpretu opravena nesprávná deserializace XML (ve specifických a námi netestovaných případech).
 | 26-03-06 | `c153e76` | Úprava implementace výstupního modelu testovacího nástroje (nemá žádný dopad na strukturu či použití).
 | 26-03-06 | `67fd08c` | V Py šabloně interpretu odstraněny uvozovky kolem dopředných typových anotací (v Py 3.14 není vyžadováno).
