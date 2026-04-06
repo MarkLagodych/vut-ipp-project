@@ -27,7 +27,6 @@ selector: ID ":" (ID ":")*    -> selector
 block: "[" block_body "]"
 
 ?block_body: block_par "|" block_stat    -> param_block
-           | block_stat                  -> stat_block
 
 block_par: (":" ID)*
 
@@ -147,14 +146,6 @@ class SolTransformer(Transformer):
             "type": "block",
             "params": kids[0],
             "stats": kids[1]
-        }
-
-    def stat_block(self, kids):
-        # only statements
-        return {
-            "type": "block",
-            "params": [],
-            "stats": kids
         }
 
     def block_par(self, kids):
