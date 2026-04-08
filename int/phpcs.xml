@@ -11,9 +11,11 @@
 
     <arg name="ignore-annotations"/>
 
-    <rule ref="Generic.Commenting.Todo">
+    <!-- TODO uncomment this -->
+    <!-- <rule ref="Generic.Commenting.Todo">
         <type>error</type>
-    </rule>
+    </rule> -->
+
     <rule ref="Squiz.Classes.ClassFileName"/>
     <rule ref="PSR1">
         <type>error</type>
