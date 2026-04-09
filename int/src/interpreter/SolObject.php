@@ -7,6 +7,8 @@ namespace IPP\Interpreter;
 use IPP\Interpreter\InputModel\Block;
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
+use function IPP\Interpreter\{getSelectorArity};
+
 class SolObject
 {
     public SolClass $class;
@@ -20,19 +22,26 @@ class SolObject
 
     /**
      * Args:
+     * - selector: the message selector to send in the form "x", "x:", "x:y:", etc.
+     * - args: the arguments to pass to the method, defaults to an empty array.
      * - class: the class from which to start method lookup, defaults to the class of this object.
      */
-    public function send(
+    final public function send(
         string $selector,
-        array $args,
+        array $args = [],
         SolClass $class = null,
     ): SolObject {
         $class ??= $this->class;
 
         $method = $class->searchMethod($selector);
+
+        if ($method !== null) {
+            $method->execute($args);
+        }
+
         if ($method === null) {
             throw new InterpreterError(
-                ErrorCode::SEM_UNDEF,
+                ErrorCode::INT_DNU,
                 "$class does not understand message $selector"
             );
         }

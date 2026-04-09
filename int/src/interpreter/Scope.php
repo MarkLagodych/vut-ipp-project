@@ -1,0 +1,87 @@
+<?php
+
+declare(strict_types=1);
+
+namespace IPP\Interpreter;
+
+use IPP\Interpreter\SolObject;
+use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
+
+class Scope
+{
+    public ?Scope $parent;
+
+    protected array $variables = [];
+
+    /**
+     * The parent scope can be null only for the global scope.
+     */
+    public function __construct(?Scope $parent)
+    {
+        $this->parent = $parent;
+    }
+
+    /**
+     * Searches for a variable in the scope and then in parent scopes.
+     * If not found, returns null.
+     */
+    protected function tryGetVariable(string $name): ?SolObject
+    {
+        if (isset($this->variables[$name])) {
+            return $this->variables[$name];
+        }
+
+        return $this->parent?->tryGetVariable($name);
+    }
+
+    final public function hasVariable(string $name): bool
+    {
+        return $this->tryGetVariable($name) !== null;
+    }
+
+    /**
+     * Searches for a variable in the scope and then in parent scopes.
+     * If not found, throws an exception.
+     */
+    final public function getVariable(string $name): SolObject
+    {
+        return $this->tryGetVariable($name)
+            ?? throw new InterpreterError(ErrorCode::SEM_UNDEFINED, "Undefined variable: $name");
+    }
+
+    /**
+     * Tries to update an already defined variable. The variable is searched in the current scope
+     * and then in parent scopes. If the variable is not found anywhere, returns false.
+     *
+     * This helps to prohibit variable shadowing, which is not supported in SOL.
+     *
+     * Returns true if the variable is already defined and has been updated, false otherwise.
+     */
+    protected function tryUpdateVariable(string $name, SolObject $value): bool
+    {
+        if (isset($this->variables[$name])) {
+            $this->variables[$name] = $value;
+            return true;
+        }
+
+        return $this->parent?->tryUpdateVariable($name, $value) ?? false;
+    }
+
+    /**
+     * Sets the variable value.
+     * If the variable is defined in any of the parent scopes, it will be updated there.
+     */
+    final public function setVariable(string $name, SolObject $value): void
+    {
+        // "_" always discards its value and thus can never be defined.
+        if ($name === '_') {
+            return;
+        }
+
+        if ($this->tryUpdateVariable($name, $value)) {
+            return;
+        }
+
+        $this->variables[$name] = $value;
+    }
+}

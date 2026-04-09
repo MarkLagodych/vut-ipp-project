@@ -17,6 +17,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/interpreter/SelectorUtils.php';
 
 use Ahc\Cli\Exception\RuntimeException as CliRuntimeException;
 use Ahc\Cli\Input\Command;

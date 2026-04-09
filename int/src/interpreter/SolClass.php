@@ -4,63 +4,33 @@ declare(strict_types=1);
 
 namespace IPP\Interpreter;
 
-use IPP\Interpreter\InputModel\{Block, Method, ClassDef};
+use IPP\Interpreter\{SolObject, SolBlock, SolMetaClass, ExecutableBlock};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
-use IPP\Interpreter\SolState;
 
-class SolClass
+/**
+ * A class is a first-order object in this implementation and is therefore itself a SolObject.
+ *
+ * By default, a SolClass inherits from SolMetaClass, which defines the `new` and `from` static
+ * methods.
+ */
+abstract class SolClass extends SolObject
 {
     /**
-     * This is null only for the Object class.
+     * This is null only for the Object class in SOL.
      */
     public ?SolClass $parent = null;
 
     /**
-     * Map: string selector => Block method source
+     * Map: string selector => ExecutableBlock method source
      */
-    private array $methods = [];
+    protected array $methods = [];
 
-    private function __construct()
+    public function __construct()
     {
+        parent::__construct(new SolMetaClass());
     }
 
-    public static function fromSource(ClassDef $source, SolState $state): self
-    {
-        $instance = new self();
-
-        $instance->parent = $state->getClass($source->parent);
-
-        $instance->methods = [];
-        foreach ($source->methods as $method) {
-            $selectorArity = self::getSelectorArity($method->selector);
-
-            if ($selectorArity !== $method->block->arity) {
-                throw new InterpreterError(
-                    ErrorCode::SEM_ARITY,
-                    "$source->name::$method->selector arity mismatch: "
-                    . "expected $selectorArity, got {$method->block->arity}"
-                );
-            }
-
-            if (isset($instance->methods[$method->selector])) {
-                throw new InterpreterError(
-                    ErrorCode::SEM_ERROR,
-                    "redefinition of method: $method->selector in class $source->name"
-                );
-            }
-
-            $instance->methods[$method->selector] = $method->block;
-        }
-
-        return $instance;
-    }
-
-    public static function getSelectorArity(string $selector): int
-    {
-        return substr_count($selector, ':');
-    }
-
-    public function searchMethod(string $selector): ?Block
+    public function searchMethod(string $selector): ?ExecutableBlock
     {
         if ($this->methods[$selector] !== null) {
             return $this->methods[$selector];

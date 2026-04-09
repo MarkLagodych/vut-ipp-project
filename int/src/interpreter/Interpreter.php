@@ -3,10 +3,8 @@
 /**
  * This module contains the main logic of the interpreter.
  *
- * IPP: You must definitely modify this file. Bend it to your will.
- *
  * Author: Ondrej Ondryas <iondryas@fit.vut.cz>
- * Author:
+ * Author: Mark Lagodych <xlagodm00@stud.fit.vut.cz>
  *
  * AI usage notice: The template author used OpenAI Codex to create the implementation of this
  *                  module based on its Python counterpart.
@@ -16,7 +14,7 @@ declare(strict_types=1);
 
 namespace IPP\Interpreter;
 
-use IPP\Interpreter\SolState;
+use IPP\Interpreter\Loaded\{LoadedProgram};
 use IPP\Interpreter\InputModel\{Program, XmlValidationException};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 use Psr\Log\{NullLogger, LoggerInterface};
@@ -30,8 +28,8 @@ use SplFileObject;
 class Interpreter
 {
     private LoggerInterface $logger;
-    private ?Program $currentProgram = null;
-    private ?SolState $currentState = null;
+    private ?Program $programSource = null;
+    private ?LoadedProgram $loadedProgram = null;
 
     public function __construct(?LoggerInterface $logger = null)
     {
@@ -70,12 +68,22 @@ class Interpreter
         }
 
         try {
-            $this->currentProgram = Program::fromXml($rootElement);
+            $this->programSource = Program::fromXml($rootElement);
         } catch (XmlValidationException $e) {
             throw new InterpreterError(ErrorCode::INT_STRUCTURE, 'Invalid SOL-XML structure', $e);
         }
 
-        $this->currentState = SolState::fromSource($this->currentProgram);
+        $this->loadedProgram = new LoadedProgram($this->programSource);
+
+        if (!$this->loadedProgram->globalScope->hasVariable('Main')) {
+            throw new InterpreterError(ErrorCode::SEM_MAIN, 'No Main class found in the program');
+        }
+
+        $mainClass = $this->loadedProgram->globalScope->getVariable('Main');
+
+        if ($mainClass->searchMethod('run') === null) {
+            throw new InterpreterError(ErrorCode::SEM_MAIN, "No 'run' method found in Main class");
+        }
     }
 
     /**
@@ -83,12 +91,15 @@ class Interpreter
      */
     public function execute(?SplFileObject $inputIo): void
     {
-        if ($this->currentState === null) {
+        if ($this->loadedProgram === null) {
             throw new InterpreterError(ErrorCode::INT_OTHER, 'No program is loaded.');
         }
 
         $this->logger->info('Executing program');
 
-        //TODO
+        $mainClass = $this->loadedProgram->globalScope->getVariable('Main');
+
+        $main = new SolObject($mainClass);
+        $main->send('run');
     }
 }
