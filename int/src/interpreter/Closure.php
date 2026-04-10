@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace IPP\Interpreter;
 
 use IPP\Interpreter\{SolObject, Scope, ExecutableBlock};
-use IPP\Interpreter\InputModel\{Block as BlockSource, Assign, Parameter};
+use IPP\Interpreter\Validation\ValidationScope;
+use IPP\Interpreter\InputModel\{Block as BlockSource, Assign, Parameter, Expr, Literal, Send, Arg};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
 class Closure implements ExecutableBlock
@@ -22,41 +23,36 @@ class Closure implements ExecutableBlock
 
     private static function validateBlock(BlockSource $block, Scope $parentScope): void
     {
-        self::validateParams($block->parameters);
+        $params = array_map(fn(Parameter $param) => $param->name, $block->parameters);
 
-        $localScope = new Scope($parentScope, $block->parameters);
+        $localScope = new ValidationScope($parentScope, $params);
 
         foreach ($block->assigns as $assignment) {
             self::validateAssignment($assignment, $localScope);
         }
     }
 
-    private static function validateAssignment(Assign $assignment, Scope $scope): void
+    private static function validateAssignment(Assign $assignment, ValidationScope $scope): void
     {
-        // TODO implement assignment validation
+        self::validateExpr($assignment->expr, $scope);
+        $scope->checkAssign($assignment->target->name);
     }
 
-    /**
-     * @param array<Parameter> $params
-     */
-    private static function validateParams(array $params): void
+    private static function validateExpr(Expr $expr, ValidationScope $scope): void
     {
-        /** @var array<string, bool> (param name => true) */
-        $visited = [];
-        foreach ($params as $param) {
-            $name = $param->name;
-            // "_" always ignores its value and can never be assigned, even if it is a parameter
-            if ($name == "_") {
-                continue;
+        if ($expr->variable !== null) {
+            $scope->checkDefined($expr->variable->name);
+        } elseif ($expr->literal !== null) {
+            if ($expr->literal->classId === 'class') {
+                $scope->checkDefined($expr->literal->value);
             }
-
-            if (isset($visited[$name])) {
-                throw new InterpreterError(
-                    ErrorCode::SEM_ERROR,
-                    "Duplicate parameter name '$name' in closure"
-                );
+        } elseif ($expr->block !== null) {
+            self::validateBlock($expr->block, $scope);
+        } elseif ($expr->send !== null) {
+            self::validateExpr($expr->send->receiver, $scope);
+            foreach ($expr->send->args as $arg) {
+                self::validateExpr($arg->expr, $scope);
             }
-            $visited[$name] = true;
         }
     }
 

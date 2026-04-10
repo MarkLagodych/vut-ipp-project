@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IPP\Interpreter;
 
 use IPP\Interpreter\{SolObject, Closure};
+use IPP\Interpreter\Validation\ValidationScope;
 use IPP\Interpreter\InputModel\{Method as MethodSource, Block as BlockSource};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
@@ -21,7 +22,9 @@ class Method extends Closure
         $this->selector = $source->selector;
 
         self::validateArity($source, $className);
-        parent::__construct($source->block, $globalScope);
+
+        $helperScope = new ValidationScope($globalScope, ['self', 'super']);
+        parent::__construct($source->block, $helperScope);
     }
 
     private static function validateArity(MethodSource $methodDef, string $className): void

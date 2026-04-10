@@ -9,19 +9,19 @@ use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
 class Scope
 {
-    private ?Scope $parent;
+    protected ?Scope $parent;
 
     /**
-     * @var array<string, SolObject>
+     * @var array<string, object>
      */
-    private array $variables;
+    protected array $variables;
 
     /**
      * The parent scope can be null only for the global scope.
      * Initial variables are defined in the current scope and can shadow variables from parent
      * scopes.
      *
-     * @param array<string, SolObject> $initialVariables
+     * @param array<string, object> $initialVariables
      */
     public function __construct(?Scope $parent, array $initialVariables = [])
     {
@@ -33,8 +33,13 @@ class Scope
      * Searches for a variable in the scope and then in parent scopes.
      * If not found, returns null.
      */
-    public function getVariable(string $name): ?SolObject
+    final public function getVariable(string $name): ?object
     {
+        // "_" can never be accessed.
+        if ($name === '_') {
+            return null;
+        }
+
         if (isset($this->variables[$name])) {
             return $this->variables[$name];
         }
@@ -50,7 +55,7 @@ class Scope
      *
      * Returns true if the variable is already defined and has been updated, false otherwise.
      */
-    private function tryUpdateVariable(string $name, SolObject $value): bool
+    protected function tryUpdateVariable(string $name, object $value): bool
     {
         if (isset($this->variables[$name])) {
             $this->variables[$name] = $value;
@@ -64,9 +69,9 @@ class Scope
      * Sets the variable value.
      * If the variable is defined in any of the parent scopes, it will be updated there.
      */
-    public function setVariable(string $name, SolObject $value): void
+    final public function setVariable(string $name, object $value): void
     {
-        // "_" always discards its value and thus can never be defined.
+        // "_" always discards its value.
         if ($name === '_') {
             return;
         }
