@@ -15,8 +15,18 @@ class SolMetaClass extends SolClass
     {
         // TODO
         $this->methods = [
-            "new" => null,
-            "from:" => null,
+            "new" => new class implements ExecutableBlock {
+                public function execute(array $args): SolObject
+                {
+                    throw new \RuntimeException("Not implemented yet");
+                }
+            },
+            "from:" => new class implements ExecutableBlock {
+                public function execute(array $args): SolObject
+                {
+                    throw new \RuntimeException("Not implemented yet");
+                }
+            },
         ];
     }
 }

@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace IPP\Interpreter;
 
-use IPP\Interpreter\Loaded\{LoadedProgram};
-use IPP\Interpreter\InputModel\{Program, XmlValidationException};
+use IPP\Interpreter\Program;
+use IPP\Interpreter\InputModel\{Program as ProgramSource, XmlValidationException};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 use Psr\Log\{NullLogger, LoggerInterface};
 use DOMDocument;
@@ -28,8 +28,7 @@ use SplFileObject;
 class Interpreter
 {
     private LoggerInterface $logger;
-    private ?Program $programSource = null;
-    private ?LoadedProgram $loadedProgram = null;
+    private ?Program $currentProgram = null;
 
     public function __construct(?LoggerInterface $logger = null)
     {
@@ -68,22 +67,13 @@ class Interpreter
         }
 
         try {
-            $this->programSource = Program::fromXml($rootElement);
+            $programSource = ProgramSource::fromXml($rootElement);
         } catch (XmlValidationException $e) {
             throw new InterpreterError(ErrorCode::INT_STRUCTURE, 'Invalid SOL-XML structure', $e);
         }
 
-        $this->loadedProgram = new LoadedProgram($this->programSource);
-
-        if (!$this->loadedProgram->globalScope->hasVariable('Main')) {
-            throw new InterpreterError(ErrorCode::SEM_MAIN, 'No Main class found in the program');
-        }
-
-        $mainClass = $this->loadedProgram->globalScope->getVariable('Main');
-
-        if ($mainClass->searchMethod('run') === null) {
-            throw new InterpreterError(ErrorCode::SEM_MAIN, "No 'run' method found in Main class");
-        }
+        $this->currentProgram = new Program();
+        $this->currentProgram->loadSource($programSource);
     }
 
     /**
@@ -91,15 +81,12 @@ class Interpreter
      */
     public function execute(?SplFileObject $inputIo): void
     {
-        if ($this->loadedProgram === null) {
+        if ($this->currentProgram === null) {
             throw new InterpreterError(ErrorCode::INT_OTHER, 'No program is loaded.');
         }
 
         $this->logger->info('Executing program');
 
-        $mainClass = $this->loadedProgram->globalScope->getVariable('Main');
-
-        $main = new SolObject($mainClass);
-        $main->send('run');
+        $this->currentProgram->run();
     }
 }
