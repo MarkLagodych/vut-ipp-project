@@ -34,7 +34,7 @@ class SolClass extends SolObject
         parent::__construct(new SolMetaClass());
     }
 
-    final public function searchMethod(string $selector): ?ExecutableBlock
+    final public function getMethod(string $selector): ?ExecutableBlock
     {
         if (isset($this->methods[$selector])) {
             return $this->methods[$selector];
@@ -44,7 +44,7 @@ class SolClass extends SolObject
             return null;
         }
 
-        return $this->parent->searchMethod($selector);
+        return $this->parent->getMethod($selector);
     }
 
     public function loadMethods(Scope $globalScope, ClassDef $classDef): void
@@ -57,7 +57,8 @@ class SolClass extends SolObject
                 );
             }
 
-            $this->methods[$methodDef->selector] = new MethodBlock($methodDef);
+            $method = new Method($methodDef, $classDef->name, $globalScope);
+            $this->methods[$methodDef->selector] = $method;
         }
     }
 }

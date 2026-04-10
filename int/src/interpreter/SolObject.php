@@ -34,7 +34,7 @@ class SolObject
     ): SolObject {
         $class ??= $this->class;
 
-        $method = $class->searchMethod($selector);
+        $method = $class->getMethod($selector);
         if ($method === null) {
             throw new InterpreterError(
                 ErrorCode::INT_DNU,
@@ -43,6 +43,6 @@ class SolObject
         }
 
         // TODO
-        return $method->execute([$this, ...$args]);
+        return $method->execute(["self" => $this, "super" => $this, ...$args]);
     }
 }

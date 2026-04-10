@@ -117,7 +117,7 @@ class Program
         $mainClass = $this->globalScope->getVariable('Main')
             ?? throw new InterpreterError(ErrorCode::SEM_UNDEF, "Class 'Main' is not defined");
 
-        if ($mainClass->searchMethod('run') === null) {
+        if ($mainClass->getMethod('run') === null) {
             throw new InterpreterError(ErrorCode::SEM_UNDEF, "Method 'Main::run' is not defined");
         }
     }
