@@ -7,6 +7,8 @@ namespace IPP\Interpreter;
 use IPP\Interpreter\SolClass;
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
+use function IPP\Interpreter\Utils\{getSelectorArity, selectorToAttribute};
+
 class SolObject
 {
     public SolClass $class;
@@ -35,14 +37,32 @@ class SolObject
         $class ??= $this->class;
 
         $method = $class->getMethod($selector);
+
         if ($method === null) {
+            if (getSelectorArity($selector) === 1) {
+                $attrName = selectorToAttribute($selector);
+
+                if ($class->getMethod($attrName) !== null) {
+                    throw new InterpreterError(
+                        ErrorCode::INT_INST_ATTR,
+                        "Cannot set attribute '$attrName'"
+                        . " (collision with '$class->name::$attrName')"
+                    );
+                }
+
+                $this->attributes[$attrName] = $args[1];
+            }
+
+            if (getSelectorArity($selector) === 0 && isset($this->attributes[$selector])) {
+                return $this->attributes[$selector];
+            }
+
             throw new InterpreterError(
                 ErrorCode::INT_DNU,
                 "'$class->name' does not understand message '$selector'"
             );
         }
 
-        // TODO
         return $method->execute([$this, ...$args]);
     }
 }

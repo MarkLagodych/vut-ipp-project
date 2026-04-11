@@ -9,6 +9,11 @@ function getSelectorArity(string $selector): int
     return substr_count($selector, ':');
 }
 
+function selectorToAttribute(string $selector): string
+{
+    return str_replace(':', '', $selector);
+}
+
 function makeBlockSelector(int $arity): string
 {
     if ($arity === 0) {
