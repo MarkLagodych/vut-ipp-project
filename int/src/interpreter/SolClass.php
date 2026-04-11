@@ -57,7 +57,7 @@ class SolClass extends SolObject
                 );
             }
 
-            $method = new Method($methodDef, $classDef->name, $globalScope);
+            $method = new Method($methodDef, $this, $globalScope);
             $this->methods[$methodDef->selector] = $method;
         }
     }

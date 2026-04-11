@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IPP\Interpreter;
 
-use IPP\Interpreter\{SolObject, Closure};
+use IPP\Interpreter\{SolObject, SolClass, Closure};
 use IPP\Interpreter\Validation\ValidationScope;
 use IPP\Interpreter\InputModel\{Method as MethodSource, Block as BlockSource};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
@@ -13,18 +13,19 @@ use function IPP\Interpreter\getSelectorArity;
 
 class Method extends Closure
 {
-    private string $className;
     private string $selector;
 
-    public function __construct(MethodSource $source, string $className, Scope $globalScope)
+    public function __construct(MethodSource $source, SolClass $class, Scope $globalScope)
     {
-        $this->className = $className;
         $this->selector = $source->selector;
 
-        self::validateArity($source, $className);
+        self::validateArity($source, $class->name);
 
         $helperScope = new ValidationScope($globalScope, ['self', 'super']);
-        parent::__construct($source->block, $helperScope);
+        parent::__construct($source->block, $class, $helperScope);
+
+        // Accept the receiver as an implicit first parameter
+        $this->params = ['self', ...$this->params];
     }
 
     private static function validateArity(MethodSource $methodDef, string $className): void
@@ -39,14 +40,20 @@ class Method extends Closure
         }
     }
 
-    public function execute(array $args): SolObject
+    protected function executeInScope(Scope $localScope): SolObject
     {
+        /** @var SolObject (this is never null) */
+        $self = $localScope->getVariable('self');
+
+        // 'super' as a variable is just an alias to 'self' for instance methods.
+        $localScope = new Scope($localScope, ['super' => $self]);
+
         try {
-            return parent::execute($args);
+            return parent::executeInScope($localScope);
         } catch (InterpreterError $e) {
             throw new InterpreterError(
                 $e->errorCode,
-                $e->getMessage() . "\n\tat $this->className::$this->selector"
+                $e->getMessage() . "\n\tat {$this->class->name}::$this->selector"
             );
         }
     }

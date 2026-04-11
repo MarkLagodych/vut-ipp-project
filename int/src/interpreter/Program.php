@@ -17,8 +17,12 @@ class Program
         $this->globalScope = new Scope(null);
 
         // TODO built-in classes and objects
-        $objectClass = new SolClass('Object');
-        $this->globalScope->setVariable('Object', $objectClass);
+
+        $this->globalScope->setVariable('Object', new SolClass('Object'));
+
+        $nilClass = new SolClass('Nil');
+        $this->globalScope->setVariable('Nil', $nilClass);
+        $this->globalScope->setVariable('nil', new SolObject($nilClass));
     }
 
     public function run(): void

@@ -43,6 +43,6 @@ class SolObject
         }
 
         // TODO
-        return $method->execute(["self" => $this, "super" => $this, ...$args]);
+        return $method->execute([$this, ...$args]);
     }
 }

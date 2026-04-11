@@ -35,11 +35,6 @@ class Scope
      */
     final public function getVariable(string $name): ?object
     {
-        // "_" can never be accessed.
-        if ($name === '_') {
-            return null;
-        }
-
         if (isset($this->variables[$name])) {
             return $this->variables[$name];
         }
@@ -71,11 +66,6 @@ class Scope
      */
     final public function setVariable(string $name, object $value): void
     {
-        // "_" always discards its value.
-        if ($name === '_') {
-            return;
-        }
-
         if ($this->tryUpdateVariable($name, $value)) {
             return;
         }

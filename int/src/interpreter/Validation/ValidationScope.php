@@ -9,54 +9,34 @@ use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
 /**
  * This scope performs validation checks on every variable assignment.
- * It is intended to be used for validating blocks: it is constructed with block parameters as
- * initial variables and always checks that they are not assigned.
+ * It is intended to be used for validating methods and closure blocks:
+ * it is constructed with predefined variables such as 'self', 'super' and block parameters
+ * and ensures their immutability.
  */
 class ValidationScope extends Scope
 {
     /**
-     * Contains variable names that are block parameters.
-     * Such variables are immutable.
+     * Contains variable names that are predefined immutable variables.
      * @var array<string, true>
      */
-    private array $params;
+    private array $predefined;
 
     /**
-     * @param array<string> $params
+     * @param array<string> $predefined
      */
-    public function __construct(?Scope $parent, array $params = [])
+    public function __construct(?Scope $parent, array $predefined = [])
     {
-        $params = self::processParams($params);
-        $this->params = array_fill_keys($params, true);
-        parent::__construct($parent, array_fill_keys($params, new \stdClass()));
-    }
-
-    /**
-     * @param array<string> $params
-     * @return array<string>
-     */
-    private static function processParams(array $params): array
-    {
-        $params = array_filter($params, fn (string $name) => $name !== '_');
-        asort($params);
-
-        array_reduce($params, function ($prev, $next) {
-            if ($prev === $next) {
-                throw new InterpreterError(ErrorCode::SEM_ERROR, "Duplicate parameter '$prev'");
-            }
-
-            return $next;
-        });
-
-        return $params;
+        $this->predefined = array_fill_keys($predefined, true);
+        parent::__construct($parent, array_fill_keys($predefined, new \stdClass()));
     }
 
     protected function tryUpdateVariable(string $name, object $value): bool
     {
-        if (isset($this->params[$name])) {
+        if (isset($this->predefined[$name])) {
             throw new InterpreterError(
                 ErrorCode::SEM_COLLISION,
-                "Cannot assign to parameter '$name'"
+                "Cannot assign to '$name'"
+                . " (assigning to parameters and predefined variables is not allowed)"
             );
         }
 
@@ -65,7 +45,7 @@ class ValidationScope extends Scope
 
     /**
      * Simulates assignment to a variable. This makes it defined.
-     * Throws if the variable is a parameter.
+     * Throws if the variable is a predefined variable.
      */
     public function checkAssign(string $name): void
     {
