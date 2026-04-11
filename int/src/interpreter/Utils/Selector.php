@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IPP\Interpreter;
+namespace IPP\Interpreter\Utils;
 
 function getSelectorArity(string $selector): int
 {

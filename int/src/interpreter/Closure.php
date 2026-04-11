@@ -8,6 +8,11 @@ use IPP\Interpreter\{SolObject, SolClass, Scope, ExecutableBlock};
 use IPP\Interpreter\Validation\ValidationScope;
 use IPP\Interpreter\InputModel\{Block as BlockSource, Assign, Parameter, Expr, Literal, Send, Arg};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
+use IPP\Interpreter\Utils\ExprType;
+
+use function IPP\Interpreter\Utils\{
+    getExprType, getExprVariable, getExprLiteral, getExprBlock, getExprSend
+};
 
 class Closure implements ExecutableBlock
 {
@@ -32,8 +37,18 @@ class Closure implements ExecutableBlock
 
         $this->body = $source->assigns;
         $this->params = array_map(fn(Parameter $param) => $param->name, $source->parameters);
+    }
 
-        self::validateBlock($source, $this->parentScope);
+    protected static function validateBlock(BlockSource $block, Scope $parentScope): void
+    {
+        $params = array_map(fn(Parameter $param) => $param->name, $block->parameters);
+        self::validateParams($params);
+
+        $localScope = new ValidationScope($parentScope, $params);
+
+        foreach ($block->assigns as $assignment) {
+            self::validateAssignment($assignment, $localScope);
+        }
     }
 
     /**
@@ -52,18 +67,6 @@ class Closure implements ExecutableBlock
         });
     }
 
-    private static function validateBlock(BlockSource $block, Scope $parentScope): void
-    {
-        $params = array_map(fn(Parameter $param) => $param->name, $block->parameters);
-        self::validateParams($params);
-
-        $localScope = new ValidationScope($parentScope, $params);
-
-        foreach ($block->assigns as $assignment) {
-            self::validateAssignment($assignment, $localScope);
-        }
-    }
-
     private static function validateAssignment(Assign $assignment, ValidationScope $scope): void
     {
         self::validateExpr($assignment->expr, $scope);
@@ -72,19 +75,31 @@ class Closure implements ExecutableBlock
 
     private static function validateExpr(Expr $expr, ValidationScope $scope): void
     {
-        if ($expr->variable !== null) {
-            $scope->checkDefined($expr->variable->name);
-        } elseif ($expr->literal !== null) {
-            if ($expr->literal->classId === 'class') {
-                $scope->checkDefined($expr->literal->value);
-            }
-        } elseif ($expr->block !== null) {
-            self::validateBlock($expr->block, $scope);
-        } elseif ($expr->send !== null) {
-            self::validateExpr($expr->send->receiver, $scope);
-            foreach ($expr->send->args as $arg) {
-                self::validateExpr($arg->expr, $scope);
-            }
+        switch (getExprType($expr)) {
+            case ExprType::Variable:
+                $var = getExprVariable($expr);
+                $scope->checkDefined($var->name);
+                break;
+
+            case ExprType::Literal:
+                $literal = getExprLiteral($expr);
+                if ($literal->classId === 'class') {
+                    $scope->checkDefined($literal->value);
+                }
+                break;
+
+            case ExprType::Block:
+                $block = getExprBlock($expr);
+                self::validateBlock($block, $scope);
+                break;
+
+            case ExprType::Send:
+                $send = getExprSend($expr);
+                self::validateExpr($send->receiver, $scope);
+                foreach ($send->args as $arg) {
+                    self::validateExpr($arg->expr, $scope);
+                }
+                break;
         }
     }
 
@@ -102,7 +117,60 @@ class Closure implements ExecutableBlock
      */
     protected function executeInScope(Scope $localScope): SolObject
     {
-        // TODO implement closure execution
-        return new SolObject(new SolMetaClass());
+        if (count($this->body) === 0) {
+            /** @var SolObject (the "null" object is always defined and is never NULL) */
+            $null = $localScope->getVariable('null');
+            return $null;
+        }
+
+        foreach ($this->body as $assignment) {
+            $lastValue = $this->evalExpr($assignment->expr, $localScope);
+            $localScope->setVariable($assignment->target->name, $lastValue);
+        }
+
+        return $lastValue;
+    }
+
+    private function evalExpr(Expr $expr, Scope $scope): SolObject
+    {
+        switch (getExprType($expr)) {
+            case ExprType::Variable:
+                return $this->evalVariable(getExprVariable($expr)->name, $scope);
+
+            case ExprType::Literal:
+                $literal = getExprLiteral($expr);
+                if (in_array($literal->classId, ['class', 'True', 'False', 'Nil'])) {
+                    return $this->evalVariable($literal->value, $scope);
+                }
+
+                return $this->evalLiteral($literal, $scope);
+
+            case ExprType::Block:
+                return $this->evalBlock(getExprBlock($expr), $scope);
+
+            case ExprType::Send:
+                return $this->evalSend(getExprSend($expr), $scope);
+        }
+    }
+
+    private function evalVariable(string $name, Scope $scope): SolObject
+    {
+        /** @var SolObject (all the variables are validated and so this is never null) */
+        return $scope->getVariable($name);
+    }
+
+    private function evalLiteral(Literal $literal, Scope $scope): SolObject
+    {
+        throw new \RuntimeException("TODO");
+    }
+
+    private function evalBlock(BlockSource $block, Scope $scope): SolObject
+    {
+        throw new \RuntimeException("TODO");
+    }
+
+    private function evalSend(Send $send, Scope $scope): SolObject
+    {
+        throw new \RuntimeException("TODO");
     }
 }

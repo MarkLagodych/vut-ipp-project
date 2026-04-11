@@ -9,7 +9,7 @@ use IPP\Interpreter\Validation\ValidationScope;
 use IPP\Interpreter\InputModel\{Method as MethodSource, Block as BlockSource};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
-use function IPP\Interpreter\getSelectorArity;
+use function IPP\Interpreter\Utils\getSelectorArity;
 
 class Method extends Closure
 {
@@ -20,6 +20,7 @@ class Method extends Closure
         $this->selector = $source->selector;
 
         self::validateArity($source, $class->name);
+        parent::validateBlock($source->block, $globalScope);
 
         $helperScope = new ValidationScope($globalScope, ['self', 'super']);
         parent::__construct($source->block, $class, $helperScope);
