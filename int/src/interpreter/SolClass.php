@@ -44,6 +44,8 @@ class SolClass extends SolObject
         parent::__construct(new class ($this) extends SolClass {
             public function __construct(private SolClass $myClass)
             {
+                // Do not call parent::__construct here to avoid infinite recursion.
+                $this->name = $myClass->name;
             }
 
             public function getMethod(string $selector): ?ExecutableBlock
