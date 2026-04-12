@@ -168,7 +168,7 @@ class IntegerClass extends BuiltinClass
             $iObject = new SolObject($this);
             $iObject->internalAttribute = $i;
 
-            $lastValue = $other->send('value', [$iObject]);
+            $lastValue = $other->send('value:', [$iObject]);
         }
 
         return $lastValue;
