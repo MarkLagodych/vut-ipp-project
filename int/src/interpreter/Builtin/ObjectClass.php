@@ -5,26 +5,26 @@ declare(strict_types=1);
 namespace IPP\Interpreter\Builtin;
 
 use IPP\Interpreter\{Scope, SolClass, SolObject};
-use IPP\Interpreter\Builtin\BuiltinMethod;
+use IPP\Interpreter\Builtin\{BuiltinMethod, BuiltinClass};
 
 /**
  * This is the root ancestor of all SOL classes.
  */
-class ObjectClass extends SolClass
+class ObjectClass extends BuiltinClass
 {
-    public function __construct(private Scope $globalScope)
+    public function __construct(Scope $globalScope)
     {
-        parent::__construct('Object');
+        parent::__construct('Object', $globalScope);
 
         $this->methods = [
             'identicalTo:' => new BuiltinMethod(fn($args) => $this->compareObjects($args)),
             'equalTo:' => new BuiltinMethod(fn($args) => $this->compareObjects($args)),
-            'isNumber' => new BuiltinMethod(fn($args) => $this->returnFalse()),
-            'isString' => new BuiltinMethod(fn($args) => $this->returnFalse()),
-            'isBlock' => new BuiltinMethod(fn($args) => $this->returnFalse()),
-            'isNil' => new BuiltinMethod(fn($args) => $this->returnFalse()),
-            'isBoolean' => new BuiltinMethod(fn($args) => $this->returnFalse()),
-            'asString' => new BuiltinMethod(fn($args) => $this->returnEmptyString()),
+            'isNumber' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
+            'isString' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
+            'isBlock' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
+            'isNil' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
+            'isBoolean' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
+            'asString' => new BuiltinMethod(fn($args) => $this->asString()),
         ];
     }
 
@@ -36,22 +36,13 @@ class ObjectClass extends SolClass
         $self = $args[0];
         $other = $args[1];
 
-        /** @var SolObject */
         return $self === $other
-            ? $this->globalScope->getVariable('true')
-            : $this->globalScope->getVariable('false');
+            ? $this->getBuiltinObject('true')
+            : $this->getBuiltinObject('false');
     }
 
-    private function returnFalse(): SolObject
+    private function asString(): SolObject
     {
-        /** @var SolObject */
-        return $this->globalScope->getVariable('false');
-    }
-
-    private function returnEmptyString(): SolObject
-    {
-        /** @var SolObject */
-        $String = $this->globalScope->getVariable('String');
-        return $String->send('new');
+        return $this->getBuiltinClass('String')->send('new');
     }
 }

@@ -5,52 +5,30 @@ declare(strict_types=1);
 namespace IPP\Interpreter\Builtin;
 
 use IPP\Interpreter\{Scope, SolClass, SolObject};
-use IPP\Interpreter\Builtin\BuiltinMethod;
+use IPP\Interpreter\Builtin\{BuiltinMethod, BuiltinClass};
 
 /**
  * `true` is a singleton instance of this class.
  */
-class TrueClass extends SolClass
+class TrueClass extends BuiltinClass
 {
-    public function __construct(private Scope $globalScope)
+    public function __construct(Scope $globalScope)
     {
-        parent::__construct('True');
-
-        /** @var SolClass */
-        $Object = $this->globalScope->getVariable('Object');
-        $this->parent = $Object;
+        parent::__construct('True', $globalScope);
 
         $this->methods = [
-            'isBoolean' => new BuiltinMethod(fn($args) => $this->returnTrue()),
+            'isBoolean' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
             'asString' => new BuiltinMethod(fn($args) => $this->returnString()),
-            'not' => new BuiltinMethod(fn($args) => $this->returnFalse()),
+            'not' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
             'and' => new BuiltinMethod(fn($args) => $this->doAnd($args)),
-            'or' => new BuiltinMethod(fn($args) => $this->returnTrue()),
+            'or' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
             'ifTrue:ifFalse:' => new BuiltinMethod(fn($args) => $this->ifTrueIfFalse($args)),
         ];
 
         $this->staticMethods = [
-            'new' => new BuiltinMethod(function (array $args) {
-                /** @var SolClass */
-                return $this->globalScope->getVariable('true');
-            }),
-            'from:' => new BuiltinMethod(function (array $args) {
-                /** @var SolClass */
-                return $this->globalScope->getVariable('true');
-            }),
+            'new' => new BuiltinMethod(fn (array $args) => $this->getBuiltinObject('true')),
+            'from:' => new BuiltinMethod(fn (array $args) => $this->getBuiltinObject('true')),
         ];
-    }
-
-    private function returnTrue(): SolObject
-    {
-        /** @var SolObject */
-        return $this->globalScope->getVariable('true');
-    }
-
-    private function returnFalse(): SolObject
-    {
-        /** @var SolObject */
-        return $this->globalScope->getVariable('false');
     }
 
     /**
@@ -75,10 +53,8 @@ class TrueClass extends SolClass
 
     private function returnString(): SolObject
     {
-        /** @var SolObject */
-        $String = $this->globalScope->getVariable('String');
-        $result = $String->send('new');
-        $result->internalAttribute = 'true';
-        return $result;
+        $str = $this->getBuiltinClass('String')->send('new');
+        $str->internalAttribute = 'true';
+        return $str;
     }
 }
