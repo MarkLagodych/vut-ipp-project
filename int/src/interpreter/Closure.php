@@ -186,6 +186,19 @@ class Closure implements ExecutableBlock
 
     private function evalSend(Send $send, Scope $scope): SolObject
     {
-        throw new \RuntimeException("TODO");
+        $receiver = $this->evalExpr($send->receiver, $scope);
+        $args = array_map(fn(Arg $arg) => $this->evalExpr($arg->expr, $scope), $send->args);
+
+        $class = null;
+        if ($send->receiver->variable !== null) {
+            $name = $send->receiver->variable->name;
+            if ($name === 'self') {
+                $class = $this->class;
+            } elseif ($name === 'super') {
+                $class = $this->class->parent;
+            }
+        }
+
+        return $receiver->send($send->selector, $args, $class);
     }
 }
