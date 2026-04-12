@@ -35,8 +35,6 @@ class FalseClass extends SolClass
                 return $this->globalScope->getVariable('false');
             }),
         ];
-
-        $globalScope->setVariable('false', new SolObject($this));
     }
 
     private function returnTrue(): SolObject

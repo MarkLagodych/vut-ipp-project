@@ -35,8 +35,6 @@ class NilClass extends SolClass
                 return $this->globalScope->getVariable('nil');
             }),
         ];
-
-        $globalScope->setVariable('nil', new SolObject($this));
     }
 
     private function returnTrue(): SolObject

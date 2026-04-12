@@ -35,8 +35,6 @@ class TrueClass extends SolClass
                 return $this->globalScope->getVariable('true');
             }),
         ];
-
-        $globalScope->setVariable('true', new SolObject($this));
     }
 
     private function returnTrue(): SolObject

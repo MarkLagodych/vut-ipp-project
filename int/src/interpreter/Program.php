@@ -20,9 +20,19 @@ class Program
         $this->globalScope = new Scope(null);
 
         $this->globalScope->setVariable('Object', new ObjectClass($this->globalScope));
-        $this->globalScope->setVariable('Nil', new NilClass($this->globalScope));
-        $this->globalScope->setVariable('True', new TrueClass($this->globalScope));
-        $this->globalScope->setVariable('False', new FalseClass($this->globalScope));
+
+        $Nil = new NilClass($this->globalScope);
+        $this->globalScope->setVariable('Nil', $Nil);
+        $this->globalScope->setVariable('nil', new SolObject($Nil));
+
+        $True = new TrueClass($this->globalScope);
+        $this->globalScope->setVariable('True', $True);
+        $this->globalScope->setVariable('true', new SolObject($True));
+
+        $False = new FalseClass($this->globalScope);
+        $this->globalScope->setVariable('False', $False);
+        $this->globalScope->setVariable('false', new SolObject($False));
+
         $this->globalScope->setVariable('Integer', new IntegerClass($this->globalScope));
         $this->globalScope->setVariable('String', new StringClass($this->globalScope));
         $this->globalScope->setVariable('Block', new BlockClass($this->globalScope));
