@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace IPP\Interpreter\Builtin;
 
 use IPP\Interpreter\{Scope, SolClass, SolObject};
+use SplFileObject;
 
 class StringClass extends SolClass
 {
+    public ?SplFileObject $input = null;
+
     public function __construct(private Scope $globalScope)
     {
         parent::__construct('String');
@@ -23,12 +26,16 @@ class StringClass extends SolClass
         ];
 
         $this->staticMethods = [
-            'new' => new BuiltinMethod(function (array $args) {
-                $str = new SolObject($this);
-                $str->internalAttribute = '';
-                return $str;
-            }),
+            'new' => new BuiltinMethod(fn($args) => $this->new()),
+            'read' => new BuiltinMethod(fn($args) => $this->read()),
         ];
+    }
+
+    private function new(): SolObject
+    {
+        $str = new SolObject($this);
+        $str->internalAttribute = '';
+        return $str;
     }
 
     private function returnTrue(): SolObject
@@ -45,5 +52,14 @@ class StringClass extends SolClass
         $self = $args[0];
         echo (string)$self->internalAttribute;
         return $self;
+    }
+
+    private function read(): SolObject
+    {
+        $result = rtrim($this->input?->fgets() ?? '', "\r\n");
+
+        $str = new SolObject($this);
+        $str->internalAttribute = $result;
+        return $str;
     }
 }

@@ -87,6 +87,8 @@ class Interpreter
 
         $this->logger->info('Executing program');
 
+        $this->currentProgram->setInput($inputIo);
         $this->currentProgram->run();
+        $this->currentProgram->setInput(null);
     }
 }

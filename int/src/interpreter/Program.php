@@ -10,10 +10,13 @@ use IPP\Interpreter\Builtin\{
 };
 use IPP\Interpreter\InputModel\{Program as ProgramSource, ClassDef};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
+use SplFileObject;
 
 class Program
 {
     public Scope $globalScope;
+
+    private StringClass $String;
 
     public function __construct()
     {
@@ -34,8 +37,15 @@ class Program
         $this->globalScope->setVariable('false', new SolObject($False));
 
         $this->globalScope->setVariable('Integer', new IntegerClass($this->globalScope));
-        $this->globalScope->setVariable('String', new StringClass($this->globalScope));
         $this->globalScope->setVariable('Block', new BlockClass($this->globalScope));
+
+        $this->String = new StringClass($this->globalScope);
+        $this->globalScope->setVariable('String', $this->String);
+    }
+
+    public function setInput(?SplFileObject $input): void
+    {
+        $this->String->input = $input;
     }
 
     public function run(): void
