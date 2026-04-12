@@ -58,7 +58,8 @@ class SolObject
                     );
                 }
 
-                $this->attributes[$attrName] = $args[1];
+                $this->attributes[$attrName] = $args[0];
+                return $this;
             }
 
             if (getSelectorArity($selector) === 0 && isset($this->attributes[$selector])) {

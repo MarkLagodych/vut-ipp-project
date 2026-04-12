@@ -20,10 +20,11 @@ class Method extends Closure
         $this->selector = $source->selector;
 
         self::validateArity($source, $class->name);
-        parent::validateBlock($source->block, $globalScope);
 
-        $helperScope = new ValidationScope($globalScope, ['self', 'super']);
-        parent::__construct($source->block, $class, $helperScope);
+        $validationScope = new ValidationScope($globalScope, ['self', 'super']);
+        parent::validateBlock($source->block, $validationScope);
+
+        parent::__construct($source->block, $class, $globalScope);
 
         // Accept the receiver as an implicit first parameter
         $this->params = ['self', ...$this->params];
