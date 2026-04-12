@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace IPP\Interpreter;
 
-use IPP\Interpreter\{SolObject, SolClass, Scope, ExecutableBlock};
+use IPP\Interpreter\{SolObject, SolClass, Scope, ExecutableBlock, BlockObject};
 use IPP\Interpreter\Validation\ValidationScope;
-use IPP\Interpreter\InputModel\{Block as BlockSource, Assign, Parameter, Expr, Literal, Send, Arg};
+use IPP\Interpreter\InputModel\{Block, Assign, Parameter, Expr, Literal, Send, Arg};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
-use IPP\Interpreter\Utils\ExprType;
-
-use function IPP\Interpreter\Utils\{
-    getExprType, getExprVariable, getExprLiteral, getExprBlock, getExprSend
-};
 
 class Closure implements ExecutableBlock
 {
@@ -30,7 +25,7 @@ class Closure implements ExecutableBlock
     */
     protected array $body;
 
-    public function __construct(BlockSource $source, SolClass $class, Scope $parentScope)
+    public function __construct(Block $source, SolClass $class, Scope $parentScope)
     {
         $this->parentScope = $parentScope;
         $this->class = $class;
@@ -39,7 +34,7 @@ class Closure implements ExecutableBlock
         $this->params = array_map(fn(Parameter $param) => $param->name, $source->parameters);
     }
 
-    protected static function validateBlock(BlockSource $block, Scope $parentScope): void
+    protected static function validateBlock(Block $block, Scope $parentScope): void
     {
         $params = array_map(fn(Parameter $param) => $param->name, $block->parameters);
         self::validateParams($params);
@@ -75,31 +70,30 @@ class Closure implements ExecutableBlock
 
     private static function validateExpr(Expr $expr, ValidationScope $scope): void
     {
-        switch (getExprType($expr)) {
-            case ExprType::Variable:
-                $var = getExprVariable($expr);
-                $scope->checkDefined($var->name);
-                break;
 
-            case ExprType::Literal:
-                $literal = getExprLiteral($expr);
-                if ($literal->classId === 'class') {
-                    $scope->checkDefined($literal->value);
-                }
-                break;
+        if ($expr->variable !== null) {
+            $scope->checkDefined($expr->variable->name);
+            return;
+        }
 
-            case ExprType::Block:
-                $block = getExprBlock($expr);
-                self::validateBlock($block, $scope);
-                break;
+        if ($expr->literal !== null) {
+            if ($expr->literal->classId === 'class') {
+                $scope->checkDefined($expr->literal->value);
+            }
+            return;
+        }
 
-            case ExprType::Send:
-                $send = getExprSend($expr);
-                self::validateExpr($send->receiver, $scope);
-                foreach ($send->args as $arg) {
-                    self::validateExpr($arg->expr, $scope);
-                }
-                break;
+        if ($expr->block !== null) {
+            self::validateBlock($expr->block, $scope);
+            return;
+        }
+
+        if ($expr->send !== null) {
+            self::validateExpr($expr->send->receiver, $scope);
+            foreach ($expr->send->args as $arg) {
+                self::validateExpr($arg->expr, $scope);
+            }
+            return;
         }
     }
 
@@ -133,24 +127,28 @@ class Closure implements ExecutableBlock
 
     private function evalExpr(Expr $expr, Scope $scope): SolObject
     {
-        switch (getExprType($expr)) {
-            case ExprType::Variable:
-                return $this->evalVariable(getExprVariable($expr)->name, $scope);
-
-            case ExprType::Literal:
-                $literal = getExprLiteral($expr);
-                if (in_array($literal->classId, ['class', 'True', 'False', 'Nil'])) {
-                    return $this->evalVariable($literal->value, $scope);
-                }
-
-                return $this->evalLiteral($literal, $scope);
-
-            case ExprType::Block:
-                return $this->evalBlock(getExprBlock($expr), $scope);
-
-            case ExprType::Send:
-                return $this->evalSend(getExprSend($expr), $scope);
+        if ($expr->variable !== null) {
+            return $this->evalVariable($expr->variable->name, $scope);
         }
+
+        if ($expr->literal !== null) {
+            if (in_array($expr->literal->classId, ['class', 'True', 'False', 'Nil'])) {
+                return $this->evalVariable($expr->literal->value, $scope);
+            }
+
+            return $this->evalLiteral($expr->literal, $scope);
+        }
+
+        if ($expr->block !== null) {
+            return $this->evalBlock($expr->block, $scope);
+        }
+
+        if ($expr->send !== null) {
+            return $this->evalSend($expr->send, $scope);
+        }
+
+        // unreachable
+        throw new \RuntimeException("Invalid expression");
     }
 
     private function evalVariable(string $name, Scope $scope): SolObject
@@ -161,12 +159,29 @@ class Closure implements ExecutableBlock
 
     private function evalLiteral(Literal $literal, Scope $scope): SolObject
     {
-        throw new \RuntimeException("TODO");
+        if ($literal->classId === 'Integer') {
+            /** @var SolClass */
+            $Integer = $scope->getVariable('Integer');
+            $result = $Integer->send('new');
+            $result->internalAttribute = (int)$literal->value;
+            return $result;
+        }
+
+        if ($literal->classId === 'String') {
+            /** @var SolClass */
+            $String = $scope->getVariable('String');
+            $result = $String->send('new');
+            $result->internalAttribute = $literal->value;
+            return $result;
+        }
+
+        // unreachable
+        throw new \RuntimeException("Invalid literal");
     }
 
-    private function evalBlock(BlockSource $block, Scope $scope): SolObject
+    private function evalBlock(Block $block, Scope $scope): SolObject
     {
-        throw new \RuntimeException("TODO");
+        return new BlockObject($block, $this->class, $scope);
     }
 
     private function evalSend(Send $send, Scope $scope): SolObject
