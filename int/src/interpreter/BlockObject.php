@@ -36,8 +36,10 @@ class BlockObject extends SolObject
 
                 $this->methods = [
                     $selector => new BuiltinMethod(function (array $args) {
+                        $self = $args[0];
+                        $args = array_slice($args, 1);
                         /** @var Closure */
-                        $closure = $this->internalAttribute;
+                        $closure = $self->internalAttribute;
                         return $closure->execute($args);
                     })
                 ];
