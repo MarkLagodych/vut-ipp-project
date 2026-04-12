@@ -112,9 +112,9 @@ class Closure implements ExecutableBlock
     protected function executeInScope(Scope $localScope): SolObject
     {
         if (count($this->body) === 0) {
-            /** @var SolObject (the "null" object is always defined and is never NULL) */
-            $null = $localScope->getVariable('null');
-            return $null;
+            /** @var SolObject (the "nil" object is always defined and is never NULL) */
+            $nil = $localScope->getVariable('nil');
+            return $nil;
         }
 
         foreach ($this->body as $assignment) {
