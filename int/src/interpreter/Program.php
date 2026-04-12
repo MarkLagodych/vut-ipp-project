@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace IPP\Interpreter;
 
 use IPP\Interpreter\{Scope, SolClass, SolObject};
+use IPP\Interpreter\Builtin\{
+    ObjectClass, NilClass, TrueClass, FalseClass, IntegerClass, StringClass, BlockClass
+};
 use IPP\Interpreter\InputModel\{Program as ProgramSource, ClassDef};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
@@ -16,13 +19,13 @@ class Program
     {
         $this->globalScope = new Scope(null);
 
-        // TODO built-in classes and objects
-
-        $this->globalScope->setVariable('Object', new SolClass('Object'));
-
-        $nilClass = new SolClass('Nil');
-        $this->globalScope->setVariable('Nil', $nilClass);
-        $this->globalScope->setVariable('nil', new SolObject($nilClass));
+        $this->globalScope->setVariable('Object', new ObjectClass($this->globalScope));
+        $this->globalScope->setVariable('Nil', new NilClass($this->globalScope));
+        $this->globalScope->setVariable('True', new TrueClass($this->globalScope));
+        $this->globalScope->setVariable('False', new FalseClass($this->globalScope));
+        $this->globalScope->setVariable('Integer', new IntegerClass($this->globalScope));
+        $this->globalScope->setVariable('String', new StringClass($this->globalScope));
+        $this->globalScope->setVariable('Block', new BlockClass($this->globalScope));
     }
 
     public function run(): void
@@ -30,8 +33,8 @@ class Program
         $this->checkMain();
 
         /** @var SolClass (never null here) */
-        $mainClass = $this->globalScope->getVariable('Main');
-        $main = new SolObject($mainClass);
+        $Main = $this->globalScope->getVariable('Main');
+        $main = $Main->send('new');
         $main->send('run');
     }
 
