@@ -20,8 +20,8 @@ class TrueClass extends BuiltinClass
             'isBoolean' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
             'asString' => new BuiltinMethod(fn($args) => $this->returnString()),
             'not' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
-            'and' => new BuiltinMethod(fn($args) => $this->doAnd($args)),
-            'or' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
+            'and:' => new BuiltinMethod(fn($args) => $this->doAnd($args)),
+            'or:' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
             'ifTrue:ifFalse:' => new BuiltinMethod(fn($args) => $this->ifTrueIfFalse($args)),
         ];
 

@@ -20,8 +20,8 @@ class FalseClass extends BuiltinClass
             'isBoolean' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
             'asString' => new BuiltinMethod(fn($args) => $this->returnString()),
             'not' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('true')),
-            'and' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
-            'or' => new BuiltinMethod(fn($args) => $this->doOr($args)),
+            'and:' => new BuiltinMethod(fn($args) => $this->getBuiltinObject('false')),
+            'or:' => new BuiltinMethod(fn($args) => $this->doOr($args)),
             'ifTrue:ifFalse:' => new BuiltinMethod(fn($args) => $this->ifTrueIfFalse($args)),
         ];
 
