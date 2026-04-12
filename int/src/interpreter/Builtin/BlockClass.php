@@ -19,6 +19,14 @@ class BlockClass extends SolClass
         $this->methods = [
             'isBlock' => new BuiltinMethod(fn($args) => $this->returnTrue()),
         ];
+
+        $this->staticMethods = [
+            'new' => new BuiltinMethod(function (array $args) {
+                $block = new SolObject($this);
+                // TODO return a block that supports a `value` message
+                return $block;
+            }),
+        ];
     }
 
     private function returnTrue(): SolObject

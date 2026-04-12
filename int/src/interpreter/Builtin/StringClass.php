@@ -19,6 +19,7 @@ class StringClass extends SolClass
         $this->methods = [
             'isString' => new BuiltinMethod(fn($args) => $this->returnTrue()),
             'asString' => new BuiltinMethod(fn($args) => $args[0]),
+            'print' => new BuiltinMethod(fn($args) => $this->print($args)),
         ];
 
         $this->staticMethods = [
@@ -34,5 +35,15 @@ class StringClass extends SolClass
     {
         /** @var SolObject */
         return $this->globalScope->getVariable('true');
+    }
+
+    /**
+     * @param array<SolObject> $args
+     */
+    private function print(array $args): SolObject
+    {
+        $self = $args[0];
+        echo (string)$self->internalAttribute;
+        return $self;
     }
 }

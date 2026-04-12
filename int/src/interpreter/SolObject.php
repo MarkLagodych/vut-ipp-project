@@ -37,7 +37,7 @@ class SolObject
         ?SolClass $class = null,
     ): SolObject {
         $class ??= $this->class
-            ?? throw new \RuntimeException("cannot send messages to the internal root class");
+            ?? throw new \RuntimeException("object class is null (internal error)");
 
         $method = $class->getMethod($selector);
 

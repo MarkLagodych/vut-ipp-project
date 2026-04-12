@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IPP\Interpreter;
 
 use IPP\Interpreter\{SolObject, SolMetaClass, Scope, ExecutableBlock, MethodBlock};
+use IPP\Interpreter\Builtin\BuiltinMethod;
 use IPP\Interpreter\InputModel\{ClassDef};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
@@ -50,6 +51,19 @@ class SolClass extends SolObject
                 return $this->myClass->getStaticMethod($selector);
             }
         });
+
+        $this->staticMethods = [
+            'new' => new BuiltinMethod(function (array $args) {
+                return new SolObject($this);
+            }),
+            'from:' => new BuiltinMethod(function (array $args) {
+                $sourceObj = $args[1];
+                $obj = $this->send('new'); // Child classes can override `new`
+                $obj->attributes = $sourceObj->attributes;
+                $obj->internalAttribute = $sourceObj->internalAttribute;
+                return $obj;
+            }),
+        ];
     }
 
     public function getMethod(string $selector): ?ExecutableBlock

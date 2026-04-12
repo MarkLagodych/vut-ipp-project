@@ -26,19 +26,6 @@ class ObjectClass extends SolClass
             'isBoolean' => new BuiltinMethod(fn($args) => $this->returnFalse()),
             'asString' => new BuiltinMethod(fn($args) => $this->returnEmptyString()),
         ];
-
-        $this->staticMethods = [
-            'new' => new BuiltinMethod(function (array $args): SolObject {
-                return new SolObject($this);
-            }),
-            'from:' => new BuiltinMethod(function (array $args) {
-                $sourceObj = $args[1];
-                $obj = $this->send('new'); // Child classes can override `new`
-                $obj->attributes = $sourceObj->attributes;
-                $obj->internalAttribute = $sourceObj->internalAttribute;
-                return $obj;
-            }),
-        ];
     }
 
     /**
