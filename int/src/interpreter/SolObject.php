@@ -11,10 +11,12 @@ use function IPP\Interpreter\Utils\{getSelectorArity, selectorToAttribute};
 
 class SolObject
 {
-    public SolClass $class;
+    public ?SolClass $class;
 
     /** @var array<string, SolObject> */
     public array $attributes = [];
+
+    public mixed $internalAttribute = null;
 
     public function __construct(SolClass $class)
     {
@@ -34,7 +36,8 @@ class SolObject
         array $args = [],
         ?SolClass $class = null,
     ): SolObject {
-        $class ??= $this->class;
+        $class ??= $this->class
+            ?? throw new \RuntimeException("cannot send messages to the internal root class");
 
         $method = $class->getMethod($selector);
 

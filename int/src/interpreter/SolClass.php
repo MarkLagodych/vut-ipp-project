@@ -11,7 +11,7 @@ use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 /**
  * A class is a first-order object in this implementation and is therefore itself a SolObject.
  *
- * By default, a SolClass inherits from SolMetaClass, which defines the `new` and `from` static
+ * By default, a SolClass inherits from SolMetaClass, which defines the `new` and `from:` static
  * methods.
  */
 class SolClass extends SolObject
@@ -28,23 +28,40 @@ class SolClass extends SolObject
      */
     protected array $methods = [];
 
+    /**
+     * @var array<string, ExecutableBlock>
+     */
+    protected array $staticMethods = [];
+
     public function __construct(string $name)
     {
         $this->name = $name;
-        parent::__construct(new SolMetaClass());
+
+        // Semantically every `SolClass` is itself a `SolObject`.
+        // Every `SolObject` needs a class for method lookup.
+        // This anonymous class forwards method lookups to the static methods of the `SolClass`.
+        parent::__construct(new class ($this) extends SolClass {
+            public function __construct(private SolClass $myClass)
+            {
+            }
+
+            public function getMethod(string $selector): ?ExecutableBlock
+            {
+                return $this->myClass->getStaticMethod($selector);
+            }
+        });
     }
 
-    final public function getMethod(string $selector): ?ExecutableBlock
+    public function getMethod(string $selector): ?ExecutableBlock
     {
-        if (isset($this->methods[$selector])) {
-            return $this->methods[$selector];
-        }
+        return $this->methods[$selector]
+            ?? $this->parent?->getMethod($selector);
+    }
 
-        if ($this->parent === null) {
-            return null;
-        }
-
-        return $this->parent->getMethod($selector);
+    public function getStaticMethod(string $selector): ?ExecutableBlock
+    {
+        return $this->staticMethods[$selector]
+            ?? $this->parent?->getStaticMethod($selector);
     }
 
     public function loadMethods(Scope $globalScope, ClassDef $classDef): void

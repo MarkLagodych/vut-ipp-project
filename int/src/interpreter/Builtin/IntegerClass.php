@@ -6,25 +6,37 @@ namespace IPP\Interpreter\Builtin;
 
 use IPP\Interpreter\{Scope, SolClass, SolObject};
 
-class StringClass extends SolClass
+class IntegerClass extends SolClass
 {
     public function __construct(private Scope $globalScope)
     {
-        parent::__construct('String');
+        parent::__construct('Integer');
 
         /** @var SolClass */
         $Object = $this->globalScope->getVariable('Object');
         $this->parent = $Object;
 
         $this->methods = [
-            'isString' => new BuiltinMethod(fn($args) => $this->returnTrue()),
-            'asString' => new BuiltinMethod(fn($args) => $args[0]),
+            'isNumber' => new BuiltinMethod(fn($args) => $this->returnTrue()),
+            'asString' => new BuiltinMethod(function ($args): SolObject {
+                $self = $args[0];
+                /** @var number */
+                $num = $self->internalAttribute;
+
+                /** @var SolObject */
+                $String = $this->globalScope->getVariable('String');
+
+                $result = $String->send('new');
+                $result->internalAttribute = (string)$num;
+
+                return $result;
+            }),
         ];
 
         $this->staticMethods = [
             'new' => new BuiltinMethod(function (array $args) {
                 $str = new SolObject($this);
-                $str->internalAttribute = '';
+                $str->internalAttribute = 0;
                 return $str;
             }),
         ];

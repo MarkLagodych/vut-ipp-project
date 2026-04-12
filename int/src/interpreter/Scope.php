@@ -35,11 +35,8 @@ class Scope
      */
     final public function getVariable(string $name): ?object
     {
-        if (isset($this->variables[$name])) {
-            return $this->variables[$name];
-        }
-
-        return $this->parent?->getVariable($name);
+        return $this->variables[$name]
+            ?? $this->parent?->getVariable($name);
     }
 
     /**

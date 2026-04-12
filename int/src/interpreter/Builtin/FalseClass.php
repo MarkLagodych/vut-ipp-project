@@ -8,35 +8,35 @@ use IPP\Interpreter\{Scope, SolClass, SolObject};
 use IPP\Interpreter\Builtin\BuiltinMethod;
 
 /**
- * `nil` is a singleton instance of this class.
+ * `false` is a singleton instance of this class.
  */
-class NilClass extends SolClass
+class FalseClass extends SolClass
 {
     public function __construct(private Scope $globalScope)
     {
-        parent::__construct('Nil');
+        parent::__construct('False');
 
         /** @var SolClass */
         $Object = $this->globalScope->getVariable('Object');
         $this->parent = $Object;
 
         $this->methods = [
-            'isNil' => new BuiltinMethod(fn($args) => $this->returnTrue()),
+            'isBoolean' => new BuiltinMethod(fn($args) => $this->returnTrue()),
             'asString' => new BuiltinMethod(fn($args) => $this->returnString()),
         ];
 
         $this->staticMethods = [
             'new' => new BuiltinMethod(function (array $args) {
                 /** @var SolClass */
-                return $this->globalScope->getVariable('nil');
+                return $this->globalScope->getVariable('false');
             }),
             'from:' => new BuiltinMethod(function (array $args) {
                 /** @var SolClass */
-                return $this->globalScope->getVariable('nil');
+                return $this->globalScope->getVariable('false');
             }),
         ];
 
-        $globalScope->setVariable('nil', new SolObject($this));
+        $globalScope->setVariable('false', new SolObject($this));
     }
 
     private function returnTrue(): SolObject
@@ -49,6 +49,8 @@ class NilClass extends SolClass
     {
         /** @var SolObject */
         $String = $this->globalScope->getVariable('String');
-        return $String->send('new');
+        $result = $String->send('new');
+        $result->internalAttribute = 'false';
+        return $result;
     }
 }

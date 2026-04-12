@@ -6,7 +6,7 @@ namespace IPP\Interpreter\Builtin;
 
 use IPP\Interpreter\{ExecutableBlock, SolObject};
 
-class Method implements ExecutableBlock
+class BuiltinMethod implements ExecutableBlock
 {
     /**
      * @param \Closure(array<SolObject>): SolObject $func
