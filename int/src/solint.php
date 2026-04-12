@@ -151,9 +151,22 @@ try {
     // Handle interpretation errors by raising an appropriate InterpreterError
     // with the correct error code.
     $logger->debug('InterpreterError', ['exception' => $e]);
-    $message = $e->getMessage() !== '' ? $e->getMessage() : null;
+
+    if ($logLevel == Level::Debug) {
+        $message = $e->getMessage() . PHP_EOL . $e->getTraceAsString();
+    } else {
+        $message = $e->getMessage();
+    }
+
     $e->errorCode->fire($message);
 } catch (\Throwable $e) {
     $logger->error('Unhandled exception during interpretation', ['exception' => $e]);
-    ErrorCode::GENERAL_OTHER->fire($e->getMessage());
+
+    if ($logLevel == Level::Debug) {
+        $message = $e->getMessage() . PHP_EOL . $e->getTraceAsString();
+    } else {
+        $message = $e->getMessage();
+    }
+
+    ErrorCode::GENERAL_OTHER->fire($message);
 }
