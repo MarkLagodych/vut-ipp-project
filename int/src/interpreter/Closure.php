@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IPP\Interpreter;
 
-use IPP\Interpreter\{SolObject, SolClass, Scope, ExecutableBlock, BlockObject};
+use IPP\Interpreter\{SolObject, SolClass, Scope, ExecutableBlock, ClosureObject};
 use IPP\Interpreter\Validation\ValidationScope;
 use IPP\Interpreter\InputModel\{Block, Assign, Parameter, Expr, Literal, Send, Arg};
 use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
@@ -181,7 +181,7 @@ class Closure implements ExecutableBlock
 
     private function evalBlock(Block $block, Scope $scope): SolObject
     {
-        return new BlockObject($block, $this->class, $scope);
+        return new ClosureObject($block, $this->class, $scope);
     }
 
     private function evalSend(Send $send, Scope $scope): SolObject

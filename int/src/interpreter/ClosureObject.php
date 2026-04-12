@@ -11,7 +11,7 @@ use IPP\Interpreter\Exception\{InterpreterError, ErrorCode};
 
 use function IPP\Interpreter\Utils\makeBlockSelector;
 
-class BlockObject extends SolObject
+class ClosureObject extends SolObject
 {
     public function __construct(Block $source, SolClass $contextClass, Scope $parentScope)
     {
@@ -24,7 +24,7 @@ class BlockObject extends SolObject
             The following can be translated to:
             ```
             class AnonymousBlock : Block { $selector [$source] }
-            self := AnonymousBlock.
+            self := AnonymousBlock new.
             ```
         */
         parent::__construct(new class ($selector, $Block) extends SolClass {
