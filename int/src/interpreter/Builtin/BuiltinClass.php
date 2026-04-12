@@ -15,7 +15,11 @@ class BuiltinClass extends SolClass
     {
         parent::__construct($name);
 
-        $this->parent = $this->getBuiltinClass('Object');
+        if ($name === 'Object') {
+            $this->parent = null;
+        } else {
+            $this->parent = $this->getBuiltinClass('Object');
+        }
     }
 
     protected function getBuiltinObject(string $name): SolObject
