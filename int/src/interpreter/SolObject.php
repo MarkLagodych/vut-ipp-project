@@ -23,6 +23,11 @@ class SolObject
         $this->class = $class;
     }
 
+    public function isInstanceOf(SolClass $class): bool
+    {
+        return $this->class?->isSubclassOf($class) ?? false;
+    }
+
     /**
      * Args:
      * - selector: the message selector to send in the form "x", "x:", "x:y:", etc.

@@ -23,6 +23,10 @@ class TrueClass extends SolClass
         $this->methods = [
             'isBoolean' => new BuiltinMethod(fn($args) => $this->returnTrue()),
             'asString' => new BuiltinMethod(fn($args) => $this->returnString()),
+            'not' => new BuiltinMethod(fn($args) => $this->returnFalse()),
+            'and' => new BuiltinMethod(fn($args) => $this->doAnd($args)),
+            'or' => new BuiltinMethod(fn($args) => $this->returnTrue()),
+            'ifTrue:ifFalse:' => new BuiltinMethod(fn($args) => $this->ifTrueIfFalse($args)),
         ];
 
         $this->staticMethods = [
@@ -41,6 +45,32 @@ class TrueClass extends SolClass
     {
         /** @var SolObject */
         return $this->globalScope->getVariable('true');
+    }
+
+    private function returnFalse(): SolObject
+    {
+        /** @var SolObject */
+        return $this->globalScope->getVariable('false');
+    }
+
+    /**
+     * @param array<SolObject> $args
+     */
+    private function doAnd(array $args): SolObject
+    {
+        // Evaluate the argument, which must be a block
+        $arg = $args[1];
+        return $arg->send('value');
+    }
+
+    /**
+     * @param array<SolObject> $args
+     */
+    private function ifTrueIfFalse(array $args): SolObject
+    {
+        // Evaluate the first argument ("ifTrue" branch), which must be a block
+        $trueBlock = $args[1];
+        return $trueBlock->send('value');
     }
 
     private function returnString(): SolObject

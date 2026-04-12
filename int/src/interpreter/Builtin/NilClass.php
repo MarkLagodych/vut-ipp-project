@@ -22,7 +22,7 @@ class NilClass extends SolClass
 
         $this->methods = [
             'isNil' => new BuiltinMethod(fn($args) => $this->returnTrue()),
-            'asString' => new BuiltinMethod(fn($args) => $this->returnString()),
+            'asString' => new BuiltinMethod(fn($args) => $this->returnNilString()),
         ];
 
         $this->staticMethods = [
@@ -43,10 +43,12 @@ class NilClass extends SolClass
         return $this->globalScope->getVariable('true');
     }
 
-    private function returnString(): SolObject
+    private function returnNilString(): SolObject
     {
         /** @var SolObject */
         $String = $this->globalScope->getVariable('String');
-        return $String->send('new');
+        $str = $String->send('new');
+        $str->internalAttribute = 'nil';
+        return $str;
     }
 }

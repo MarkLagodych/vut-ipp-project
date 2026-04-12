@@ -80,6 +80,15 @@ class SolClass extends SolObject
             ?? $this->parent?->getStaticMethod($selector);
     }
 
+    /**
+     * Returns true if this class is equal to or is a descendant of the given class.
+     */
+    public function isSubclassOf(SolClass $class): bool
+    {
+        return $this === $class
+            || ($this->parent?->isSubclassOf($class) ?? false);
+    }
+
     public function loadMethods(Scope $globalScope, ClassDef $classDef): void
     {
         foreach ($classDef->methods as $methodDef) {

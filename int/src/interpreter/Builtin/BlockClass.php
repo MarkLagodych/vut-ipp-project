@@ -18,6 +18,7 @@ class BlockClass extends SolClass
 
         $this->methods = [
             'isBlock' => new BuiltinMethod(fn($args) => $this->returnTrue()),
+            'whileTrue:' => new BuiltinMethod(fn($args) => $this->whileTrue($args)),
         ];
 
         $this->staticMethods = [
@@ -29,6 +30,33 @@ class BlockClass extends SolClass
     {
         /** @var SolObject */
         return $this->globalScope->getVariable('true');
+    }
+
+    /**
+     * @param array<SolObject> $args
+     */
+    private function whileTrue(array $args): SolObject
+    {
+        $self = $args[0];
+        $body = $args[1];
+
+        /** @var SolObject */
+        $nil = $this->globalScope->getVariable('nil');
+        /** @var SolObject */
+        $true = $this->globalScope->getVariable('true');
+
+        $lastResult = $nil;
+        for (;;) {
+            $condition = $self->send('value');
+            // If the condition anything other than `true` (even not a boolean), we just break
+            if ($condition !== $true) {
+                break;
+            }
+
+            $lastResult = $body->send('value');
+        }
+
+        return $lastResult;
     }
 
     /**
