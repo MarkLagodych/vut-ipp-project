@@ -592,6 +592,18 @@ function main(): void {
     executeTest(test, results, unexecuted);
   }
 
+  let passed = true;
+  for (const [category, categoryReport] of Object.entries(results)) {
+    for (const [test, testResult] of Object.entries(categoryReport.test_results)) {
+      if (testResult.result !== TestResult.PASSED) {
+        logger.info(`${category}/${test} FAILED: ${testResult.result}`);
+        passed = false;
+      }
+    }
+  }
+
+  if (passed) logger.info("All tests passed!");
+
   const report = new TestReport({
     discovered_test_cases,
     unexecuted,
