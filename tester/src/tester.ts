@@ -14,11 +14,21 @@
  *                  module based on its Python counterpart.
  */
 
-import { existsSync, lstatSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, lstatSync, writeFileSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, basename, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { spawnSync } from "node:child_process";
 
-import { TestReport } from "./models.js";
+import {
+  CategoryReport,
+  TestCaseDefinition,
+  TestCaseReport,
+  TestCaseType,
+  TestReport,
+  TestResult,
+  UnexecutedReason,
+  UnexecutedReasonCode,
+} from "./models.js";
 
 import { pino } from "pino";
 
@@ -196,6 +206,354 @@ function parseArguments(): CliArguments {
   return args;
 }
 
+/**
+ * Searches for `.test` files in the given directory.
+ * Returns a list of paths to found files.
+ */
+function searchTests(dir: string, recursive: boolean): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true, recursive: recursive })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".test"))
+    .map((entry) => resolve(entry.parentPath, entry.name));
+  return entries;
+}
+
+interface TestFiles {
+  name: string;
+  test_source_path: string;
+  stdin_file: string | null;
+  expected_stdout_file: string | null;
+}
+
+/**
+ * Gathers basic test info based on the path of the main `.test` file.
+ */
+function findTestFiles(test_file: string): TestFiles {
+  const name = basename(test_file, ".test");
+  const dir = dirname(test_file);
+  const stdin_file = resolve(dir, name + ".in");
+  const expected_stdout_file = resolve(dir, name + ".out");
+
+  return {
+    name,
+    test_source_path: test_file,
+    stdin_file: existsSync(stdin_file) ? stdin_file : null,
+    expected_stdout_file: existsSync(expected_stdout_file) ? expected_stdout_file : null,
+  };
+}
+
+interface TestInfo {
+  test_type: TestCaseType;
+  description: string | null;
+  category: string;
+  points: number;
+  expected_parser_exit_codes: number[];
+  expected_interpreter_exit_codes: number[];
+  source: string;
+}
+
+function splitOnce(str: string, delimiter: string): [string, string] {
+  const index = str.indexOf(delimiter);
+  if (index === -1) {
+    return [str, ""];
+  }
+
+  return [str.slice(0, index), str.slice(index + delimiter.length)];
+}
+
+function getTestType(parserCodes: number[], interpreterCodes: number[]): TestCaseType {
+  if (parserCodes.length > 0 && interpreterCodes.length > 0) {
+    return TestCaseType.COMBINED;
+  } else if (parserCodes.length > 0) {
+    return TestCaseType.PARSE_ONLY;
+  } else {
+    return TestCaseType.EXECUTE_ONLY;
+  }
+}
+
+function readTestInfo(test_file: string): TestInfo | null {
+  const src = readFileSync(test_file, "utf8");
+
+  let description: string | null = null;
+  let category: string | null = null;
+  let points: number | null = null;
+  let source: string | null = null;
+  const parser_codes: number[] = [];
+  const interpreter_codes: number[] = [];
+
+  const lines = src.split("\n");
+  for (const [i, line] of lines.entries()) {
+    if (line.length === 0) {
+      source = lines.slice(i + 1).join("\n");
+      break;
+    }
+
+    const [marker, text] = splitOnce(line, " ");
+
+    switch (marker) {
+      case "***":
+        description = text;
+        break;
+      case "+++":
+        category = text;
+        break;
+      case "!C!":
+        parser_codes.push(Number(text));
+        break;
+      case "!I!":
+        interpreter_codes.push(Number(text));
+        break;
+      case ">>>":
+        points = Number(text);
+        break;
+    }
+  }
+
+  if (
+    category === null ||
+    points === null ||
+    source === null ||
+    (parser_codes.length === 0 && interpreter_codes.length === 0)
+  ) {
+    return null;
+  }
+
+  return {
+    test_type: getTestType(parser_codes, interpreter_codes),
+    description,
+    category,
+    points,
+    expected_parser_exit_codes: parser_codes,
+    expected_interpreter_exit_codes: interpreter_codes,
+    source,
+  };
+}
+
+class Test {
+  public readonly def: TestCaseDefinition;
+  public readonly source: string;
+  public readonly stdin_file: string | null;
+  public readonly expected_stdout_file: string | null;
+
+  public constructor(test_files: TestFiles, test_info: TestInfo) {
+    this.def = new TestCaseDefinition({
+      ...test_files,
+      ...test_info,
+    });
+
+    this.source = test_info.source;
+
+    this.stdin_file = test_files.stdin_file;
+    this.expected_stdout_file = test_files.expected_stdout_file;
+  }
+
+  public needsParser(): boolean {
+    return (
+      this.def.test_type === TestCaseType.PARSE_ONLY ||
+      this.def.test_type === TestCaseType.COMBINED
+    );
+  }
+
+  public needsInterpreter(): boolean {
+    return (
+      this.def.test_type === TestCaseType.EXECUTE_ONLY ||
+      this.def.test_type === TestCaseType.COMBINED
+    );
+  }
+}
+
+function filterTest(test: Test, args: CliArguments): boolean {
+  if (args.include !== null)
+    if (!args.include.includes(test.def.name) && !args.include.includes(test.def.category)) {
+      return false;
+    }
+
+  if (args.exclude !== null)
+    if (args.exclude.includes(test.def.name) || args.exclude.includes(test.def.category)) {
+      return false;
+    }
+
+  if (args.include_test !== null)
+    if (!args.include_test.includes(test.def.name)) {
+      return false;
+    }
+
+  if (args.exclude_test !== null)
+    if (args.exclude_test.includes(test.def.name)) {
+      return false;
+    }
+
+  if (args.include_category !== null)
+    if (!args.include_category.includes(test.def.category)) {
+      return false;
+    }
+
+  if (args.exclude_category !== null)
+    if (args.exclude_category.includes(test.def.category)) {
+      return false;
+    }
+
+  return true;
+}
+
+function discoverTests(args: CliArguments): Test[] {
+  const testFiles = searchTests(args.tests_dir, args.recursive);
+  const tests: Test[] = [];
+
+  for (const testFile of testFiles) {
+    const test_files = findTestFiles(testFile);
+    const test_info = readTestInfo(testFile);
+
+    if (test_info === null) {
+      logger.warn("Skipping test file with invalid format: %s", testFile);
+      continue;
+    }
+
+    const test = new Test(test_files, test_info);
+
+    tests.push(test);
+  }
+
+  return tests;
+}
+
+const SOL2XML = resolve(__dirname, "../sol2xml/sol_to_xml.py");
+const SOLINT = resolve(__dirname, "../../int/src/solint.php");
+const TMP_XML = resolve(__dirname, "../.tmp.xml");
+
+function executeTest(
+  test: Test,
+  reports: Record<string, CategoryReport>,
+  unexecuted: Record<string, UnexecutedReason>
+) {
+  let parserResult = null;
+  let interpreterResult = null;
+  let diffResult = null;
+
+  if (test.needsParser()) {
+    try {
+      parserResult = spawnSync(SOL2XML, {
+        input: test.source,
+        encoding: "utf8",
+      });
+    } catch {
+      unexecuted[test.def.name] = new UnexecutedReason(
+        UnexecutedReasonCode.CANNOT_EXECUTE,
+        "Failed to execute the parser"
+      );
+      return;
+    }
+  }
+
+  if (test.needsInterpreter()) {
+    const source = parserResult?.stdout ?? test.source;
+    writeFileSync(TMP_XML, source, "utf8");
+
+    const input_args = test.stdin_file !== null ? ["-i", test.stdin_file] : [];
+
+    try {
+      interpreterResult = spawnSync("php", [SOLINT, "-s", TMP_XML, ...input_args], {
+        input: source,
+        encoding: "utf8",
+      });
+    } catch {
+      unexecuted[test.def.name] = new UnexecutedReason(
+        UnexecutedReasonCode.CANNOT_EXECUTE,
+        "Failed to execute the interpreter"
+      );
+      return;
+    }
+
+    if (test.expected_stdout_file !== null) {
+      diffResult = spawnSync("diff", [test.expected_stdout_file, "-"], {
+        input: interpreterResult.stdout,
+        encoding: "utf8",
+      });
+    }
+  }
+
+  writeReport(test, reports, parserResult, interpreterResult, diffResult);
+}
+
+function getTestResult(
+  test: Test,
+  parserResult: ReturnType<typeof spawnSync> | null,
+  interpreterResult: ReturnType<typeof spawnSync> | null,
+  diffResult: ReturnType<typeof spawnSync> | null
+): TestResult {
+  if (parserResult !== null) {
+    if (!test.def.expected_parser_exit_codes?.includes(parserResult.status ?? -1)) {
+      return TestResult.UNEXPECTED_PARSER_EXIT_CODE;
+    }
+  } else if (interpreterResult !== null) {
+    if (!test.def.expected_interpreter_exit_codes?.includes(interpreterResult.status ?? -1)) {
+      return TestResult.UNEXPECTED_INTERPRETER_EXIT_CODE;
+    }
+  } else if (diffResult !== null && diffResult.status !== 0) {
+    return TestResult.INTERPRETER_RESULT_DIFFERS;
+  }
+
+  return TestResult.PASSED;
+}
+
+interface MutableCategoryReport {
+  total_points: number;
+  passed_points: number;
+  test_results: Record<string, TestCaseReport>;
+}
+
+function getTestReport(
+  test_result: TestResult,
+  parserResult: ReturnType<typeof spawnSync> | null,
+  interpreterResult: ReturnType<typeof spawnSync> | null,
+  diffResult: ReturnType<typeof spawnSync> | null
+): TestCaseReport {
+  return new TestCaseReport(
+    test_result,
+    parserResult?.status ?? null,
+    interpreterResult?.status ?? null,
+    (parserResult?.stdout ?? null) as string | null,
+    (parserResult?.stderr ?? null) as string | null,
+    (interpreterResult?.stdout ?? null) as string | null,
+    (interpreterResult?.stderr ?? null) as string | null,
+    (diffResult?.stdout ?? null) as string | null
+  );
+}
+
+function writeReport(
+  test: Test,
+  reports: Record<string, MutableCategoryReport>,
+  parserResult: ReturnType<typeof spawnSync> | null,
+  interpreterResult: ReturnType<typeof spawnSync> | null,
+  diffResult: ReturnType<typeof spawnSync> | null
+) {
+  if (!(test.def.category in reports)) {
+    reports[test.def.category] = {
+      total_points: 0,
+      passed_points: 0,
+      test_results: {},
+    };
+  }
+
+  const categoryReport = reports[test.def.category];
+  if (!categoryReport) {
+    throw new Error("Category report should have been initialized at this point");
+  }
+
+  const result: TestResult = getTestResult(test, parserResult, interpreterResult, diffResult);
+
+  categoryReport.total_points += test.def.points;
+  if (result === TestResult.PASSED) {
+    categoryReport.passed_points += test.def.points;
+  }
+
+  categoryReport.test_results[test.def.name] = getTestReport(
+    result,
+    parserResult,
+    interpreterResult,
+    diffResult
+  );
+}
+
 function main(): void {
   /**
    * The main entry point for the SOL26 integration testing script.
@@ -217,10 +575,28 @@ function main(): void {
     logger.level = "info";
   }
 
-  // TODO: Your code for discovering and executing the test cases goes here.
+  const tests = discoverTests(args);
 
-  // Example of how to write the final report:
-  const report = new TestReport({ discovered_test_cases: [], unexecuted: {}, results: {} });
+  const discovered_test_cases = tests.map((test) => test.def);
+
+  const unexecuted: Record<string, UnexecutedReason> = {};
+  const results: Record<string, CategoryReport> = {};
+
+  for (const filtered_out_test of tests.filter((test) => !filterTest(test, args))) {
+    unexecuted[filtered_out_test.def.name] = new UnexecutedReason(
+      UnexecutedReasonCode.FILTERED_OUT
+    );
+  }
+
+  for (const test of tests.filter((test) => filterTest(test, args))) {
+    executeTest(test, results, unexecuted);
+  }
+
+  const report = new TestReport({
+    discovered_test_cases,
+    unexecuted,
+    results,
+  });
   writeResult(report, args.output);
 }
 

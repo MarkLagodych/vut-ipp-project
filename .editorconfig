@@ -9,3 +9,6 @@ trim_trailing_whitespace = true
 
 [{Makefile,*.make,*.mak,*.mk}]
 indent_style = tab
+
+[*.{js,ts}]
+indent_size = 2
