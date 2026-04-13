@@ -270,6 +270,20 @@ function getTestType(parserCodes: number[], interpreterCodes: number[]): TestCas
   }
 }
 
+function resultCodesAreValid(parser_codes: number[], interpreter_codes: number[]): boolean {
+  if (parser_codes.length === 0 && interpreter_codes.length === 0) {
+    return false;
+  }
+
+  if (parser_codes.length > 0 && interpreter_codes.length > 0) {
+    if (parser_codes.length !== 1 || parser_codes[0] !== 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function readTestInfo(test_file: string): TestInfo | null {
   const src = readFileSync(test_file, "utf8");
 
@@ -305,6 +319,8 @@ function readTestInfo(test_file: string): TestInfo | null {
       case ">>>":
         points = Number(text);
         break;
+      default:
+        return null;
     }
   }
 
@@ -312,7 +328,7 @@ function readTestInfo(test_file: string): TestInfo | null {
     category === null ||
     points === null ||
     source === null ||
-    (parser_codes.length === 0 && interpreter_codes.length === 0)
+    !resultCodesAreValid(parser_codes, interpreter_codes)
   ) {
     return null;
   }
@@ -396,15 +412,19 @@ function filterTest(test: Test, args: CliArguments): boolean {
 }
 
 function discoverTests(args: CliArguments): Test[] {
-  const testFiles = searchTests(args.tests_dir, args.recursive);
+  logger.info("Discovering tests in directory: %s", args.tests_dir);
+
+  const test_file_list = searchTests(args.tests_dir, args.recursive);
   const tests: Test[] = [];
 
-  for (const testFile of testFiles) {
-    const test_files = findTestFiles(testFile);
-    const test_info = readTestInfo(testFile);
+  for (const [i, test_file] of test_file_list.entries()) {
+    const test_files = findTestFiles(test_file);
+    logger.info("[%d/%d] Reading test: %s", i + 1, test_file_list.length, test_files.name);
+
+    const test_info = readTestInfo(test_file);
 
     if (test_info === null) {
-      logger.info("Skipping test file with invalid format: %s", testFile);
+      logger.info("Skipping test file with invalid format: %s", test_file);
       continue;
     }
 
@@ -588,7 +608,10 @@ function main(): void {
     );
   }
 
-  for (const test of tests.filter((test) => filterTest(test, args))) {
+  const filtered_tests = tests.filter((test) => filterTest(test, args));
+
+  for (const [i, test] of filtered_tests.entries()) {
+    logger.info("[%d/%d] Executing test: %s", i + 1, filtered_tests.length, test.def.name);
     executeTest(test, results, unexecuted);
   }
 
@@ -596,7 +619,7 @@ function main(): void {
   for (const [category, categoryReport] of Object.entries(results)) {
     for (const [test, testResult] of Object.entries(categoryReport.test_results)) {
       if (testResult.result !== TestResult.PASSED) {
-        logger.info(`${category}/${test} FAILED: ${testResult.result}`);
+        logger.warn(`FAIL ${category}/${test} : ${testResult.result}`);
         passed = false;
       }
     }
