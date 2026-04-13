@@ -12,6 +12,7 @@ COPY tester tester
 WORKDIR /int
 RUN composer install --no-dev
 WORKDIR /tester
+RUN npm install -g typescript
 RUN npm install -g --omit=dev
 WORKDIR /tester/sol2xml
 RUN pip3 install -r requirements.txt --break-system-packages
