@@ -32,7 +32,7 @@ RUN npm install -g
 
 # ------------------------------------
 
-FROM base-dev AS check-dev
+FROM base-dev AS check
 ENTRYPOINT ["bash"]
 
 # ------------------------------------
