@@ -246,8 +246,8 @@ interface TestInfo {
   description: string | null;
   category: string;
   points: number;
-  expected_parser_exit_codes: number[];
-  expected_interpreter_exit_codes: number[];
+  expected_parser_exit_codes: number[] | null;
+  expected_interpreter_exit_codes: number[] | null;
   source: string;
 }
 
@@ -322,8 +322,8 @@ function readTestInfo(test_file: string): TestInfo | null {
     description,
     category,
     points,
-    expected_parser_exit_codes: parser_codes,
-    expected_interpreter_exit_codes: interpreter_codes,
+    expected_parser_exit_codes: parser_codes.length == 0 ? null : parser_codes,
+    expected_interpreter_exit_codes: interpreter_codes.length == 0 ? null : interpreter_codes,
     source,
   };
 }
@@ -404,7 +404,7 @@ function discoverTests(args: CliArguments): Test[] {
     const test_info = readTestInfo(testFile);
 
     if (test_info === null) {
-      logger.warn("Skipping test file with invalid format: %s", testFile);
+      logger.info("Skipping test file with invalid format: %s", testFile);
       continue;
     }
 
@@ -416,9 +416,9 @@ function discoverTests(args: CliArguments): Test[] {
   return tests;
 }
 
-const SOL2XML = resolve(__dirname, "../sol2xml/sol_to_xml.py");
-const SOLINT = resolve(__dirname, "../../int/src/solint.php");
-const TMP_XML = resolve(__dirname, "../.tmp.xml");
+const SOL2XML = resolve(import.meta.dirname, "../sol2xml/sol_to_xml.py");
+const SOLINT = resolve(import.meta.dirname, "../../int/src/solint.php");
+const TMP_XML = resolve(import.meta.dirname, "../.tmp.xml");
 
 function executeTest(
   test: Test,
@@ -480,12 +480,12 @@ function getTestResult(
   interpreterResult: ReturnType<typeof spawnSync> | null,
   diffResult: ReturnType<typeof spawnSync> | null
 ): TestResult {
-  if (parserResult !== null) {
-    if (!test.def.expected_parser_exit_codes?.includes(parserResult.status ?? -1)) {
+  if (parserResult !== null && parserResult.status != null) {
+    if (!test.def.expected_parser_exit_codes?.includes(parserResult.status)) {
       return TestResult.UNEXPECTED_PARSER_EXIT_CODE;
     }
-  } else if (interpreterResult !== null) {
-    if (!test.def.expected_interpreter_exit_codes?.includes(interpreterResult.status ?? -1)) {
+  } else if (interpreterResult !== null && interpreterResult.status != null) {
+    if (!test.def.expected_interpreter_exit_codes?.includes(interpreterResult.status)) {
       return TestResult.UNEXPECTED_INTERPRETER_EXIT_CODE;
     }
   } else if (diffResult !== null && diffResult.status !== 0) {
