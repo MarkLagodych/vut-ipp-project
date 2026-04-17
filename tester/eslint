@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+/tester/node_modules/eslint/bin/eslint.js "$@"

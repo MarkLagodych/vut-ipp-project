@@ -12,40 +12,37 @@ COPY tester tester
 WORKDIR /int
 RUN composer install --no-dev
 WORKDIR /tester
-RUN npm install -g typescript
-RUN npm install -g --omit=dev
+RUN npm install --omit=dev
 WORKDIR /tester/sol2xml
 RUN pip3 install -r requirements.txt --break-system-packages
 
 # ------------------------------------
 
-FROM base AS check-base
-ENTRYPOINT ["bash"]
+FROM base AS check
 
-# ------------------------------------
-
-FROM base AS base-dev
-
+# Install all development dependencies (including code quality checkers)
 WORKDIR /int
 RUN composer install
 WORKDIR /tester
-RUN npm install -g
+RUN npm install
 
-# ------------------------------------
-
-FROM base-dev AS check
+WORKDIR /
 ENTRYPOINT ["bash"]
 
 # ------------------------------------
 
 FROM base AS build-test
 WORKDIR /tester
+RUN npm install
 RUN npm run build
 
 # ------------------------------------
 
-FROM build-test AS runtime
-ENTRYPOINT ["php", "/int/src/solint.php"]
+FROM base AS runtime
+WORKDIR /
+COPY --from=build-test /tester/dist /tester/dist
+WORKDIR /int
+ENTRYPOINT ["php", "src/solint.php"]
 
 # ------------------------------------
 
