@@ -7,7 +7,7 @@ parameters:
         - src
     parallel:
         maximumNumberOfProcesses: 1
-    
+
     disallowedFunctionCalls:
         # https://www.php.net/ref.exec
         - function: 'exec()'

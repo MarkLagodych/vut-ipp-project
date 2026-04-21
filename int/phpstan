@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
+ln -s /int/vendor .
 /int/vendor/bin/phpstan "$@"
+rm ./vendor
