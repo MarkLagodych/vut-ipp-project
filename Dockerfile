@@ -14,7 +14,7 @@ ADD /int /int/
 COPY /int/composer.json /int/composer.lock /int/
 COPY /tester/package.json /tester/package-lock.json /
 COPY /tester/sol2xml/requirements.txt /
-COPY /tester/sol2xml/*.py /tester/sol2xml/*.xsd /sol2xml/
+COPY /tester/sol2xml/*.py /tester/sol2xml/*.xsd /tester/sol2xml/
 
 WORKDIR /int
 RUN composer install --no-dev
