@@ -383,6 +383,7 @@ class Test {
 function testIsExcluded(test: Test, args: CliArguments): boolean {
   if (
     args.exclude?.includes(test.def.name) ||
+    args.exclude?.includes(test.def.category) ||
     args.exclude_category?.includes(test.def.category) ||
     args.exclude_test?.includes(test.def.name)
   )
@@ -394,6 +395,7 @@ function testIsExcluded(test: Test, args: CliArguments): boolean {
 function testIsIncluded(test: Test, args: CliArguments): boolean {
   if (
     args.include?.includes(test.def.name) ||
+    args.include?.includes(test.def.category) ||
     args.include_category?.includes(test.def.category) ||
     args.include_test?.includes(test.def.name)
   )
