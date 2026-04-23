@@ -4,7 +4,7 @@ LOGIN=xlagodm00
 
 all: $(LOGIN).zip
 
-$(LOGIN).zip: Dockerfile int tester
+$(LOGIN).zip: Dockerfile dokumentace.md diagram.png int tester
 	zip $@ $(shell git ls-files $^)
 
 clean:

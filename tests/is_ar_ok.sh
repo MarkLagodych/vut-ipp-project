@@ -661,7 +661,7 @@ build_and_test_check() {
             -v "${ARCHIVE_ROOT}/int/:/src/int/" \
             -v "${ARCHIVE_ROOT}/tester/:/src/tester/" \
             "${DOCKER_TAG}:check" \
-            -c "cd ${src_dir} && ./${tool} --version 2>/dev/null || ./${tool} --help 2>/dev/null || ./${tool} 2>/dev/null; exit 0"; then
+            -c "cd ${src_dir} && chmod +x ./${tool} && ./${tool} --help"; then
             pass_msg "Tool '${tool}' is executable in container (${src_dir})"
         else
             fail_msg "Tool '${tool}' is NOT executable in container (${src_dir})"
