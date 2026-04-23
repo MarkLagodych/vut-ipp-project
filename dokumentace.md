@@ -49,6 +49,27 @@ inherited (even though they cannot be defined in the current version of SOL).
 - `SolClass`: a subclass of `SolObject`, the `class` attribute of `SolClass`
     is an anonymous proxy class that redirects method lookups to
     `staticMethods`.
+- `Closure`: represents any kind of SOL block; executes actual program code.
+    Captures the surrounding (`parent`) scope, but executes the code in a local
+    scope that is modifiable by derived classes.
+- `Method`: a specialization of `Closure` that just adds method semantics:
+    has a custom selector, and defines `self` and `super` in the local scope
+    when executing code. This is what classes load from source.
+- `ClosureObject`: created at runtime when evaluating block literals.
+    To be able to respond to a `value...` message, each `ClosureObject` uses
+    an anonymous class that has a method with the message selector and forwards
+    the call to an internal `Closure` that represents the block code.
+- `ExecutableBlock`: allows using both `Closure`s (program code) and
+    `BuiltinMethod`s as method bodies.
+- `BuiltinClass`: just a helper that references the global scope.
+    This is crucial for retrieving the `true`, `false`, `nil` objects and other
+    classes.
+- `BuiltinMethod`: wraps any PHP function into a SOL method.
+- `ObjectClass`, `NilClass`, `TrueClass`, `FalseClass`, `StringClass`,
+    `IntegerClass`, `BlockClass`: the built-in classes.
+    `IntegerClass` and `StringClass` create distinct objects for each literal,
+    while `TrueClass`, `FalseClass`, and `NilClass` return the same object
+    retrieved from the global scope as per the specification.
 
 ## OOP patterns used
 
@@ -58,9 +79,8 @@ inherited (even though they cannot be defined in the current version of SOL).
     interpreter-visible attribute.
 
 - **Template method:**
-    + `Closure::executeInScope` allows `Method::executeInScope` to create
-        its own scope just above the closure scope that defines `self` and
-        `super`
+    + `Closure::executeInScope` allows `Method::executeInScope` to
+        define `self` and `super`
     + `Scope::tryUpdateVariable` allows `ValidationScope::tryUpdateVariable`
         to add validation to the operation
 
