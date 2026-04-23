@@ -1,6 +1,54 @@
 # IPP project 2026
 
+This is an interpreter of the SOL26 programming language.
+
+## How this works
+
+The interpreter performs basic static analysis upon loading the program source
+in several stages. The analysis includes class definition validation (which is
+independent on the order of definition), recursive inheritance detection,
+scope validation (that handles undefined variables and parameter collision),
+and duplicate method definition detection.
+
+Validation of variable definitions and parameter collisions is notable because
+of `ValidationScope`. It is a subclass of `Scope` that does not store
+`SolObject`s but only dummy values &mdash; there are no actual objects
+during validation.
+
+Loaded classes are stored as normal objects in the global scope.
+Method bodies are represented as arrays of raw assignment AST structures
+(due to the simplicity of the language they can be executed directly).
+
+Classes are implemented as first-class objects to simplify message sending.
+Class methods are implemented as internal static methods, which are
+inherited (even though they cannot be defined in the current version of SOL).
+
+## Classes
+
 ![diagram](./diagram.png)
+
+*Note: `InputModel\Program` is referred to as `ProgramSource`.*
+
+- `Program`: loads the classes, validates the toplevel structure, sets the
+    input file stream, and runs the `Main::run` method.
+- `Scope`: an abstract data type for symbol lookup.
+- `ValidationScope`: a specialization of `Scope` that has validation (`check..`)
+    functions that throw errors for invalid variable assignments or when
+    variables are not defined.
+- `SolObject`: a root class for all SOL objects. Handles message sending logic,
+    including "does not understand" error handling, and the `class` parameter
+    that can provide a message context: for `self` the interpreter will use
+    the current class, for `super` it will use the parent class.
+
+    The internal attribute is defined in the root class
+    to simplify object copy implementation.
+
+    Note that the nullable `class` is intentional: internal anonymous proxy
+    classes that serve as classes for classes themselves have this attribute set
+    to `null`.
+- `SolClass`: a subclass of `SolObject`, the `class` attribute of `SolClass`
+    is an anonymous proxy class that redirects method lookups to
+    `staticMethods`.
 
 ## OOP patterns used
 
