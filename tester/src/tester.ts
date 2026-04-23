@@ -14,10 +14,18 @@
  *                  module based on its Python counterpart.
  */
 
-import { existsSync, lstatSync, writeFileSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, basename, resolve } from "node:path";
+import {
+  existsSync,
+  lstatSync,
+  writeFileSync,
+  readdirSync,
+  readFileSync,
+  mkdtempSync,
+} from "node:fs";
+import { dirname, basename, resolve, join } from "node:path";
 import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 
 import {
   CategoryReport,
@@ -290,17 +298,12 @@ function readTestInfo(test_file: string): TestInfo | null {
   let description: string | null = null;
   let category: string | null = null;
   let points: number | null = null;
-  let source: string | null = null;
   const parser_codes: number[] = [];
   const interpreter_codes: number[] = [];
 
-  const lines = src.split("\n");
-  for (const [i, line] of lines.entries()) {
-    if (line.length === 0) {
-      source = lines.slice(i + 1).join("\n");
-      break;
-    }
+  const [config_source, source] = splitOnce(src, "\n\n");
 
+  for (const line of config_source.split("\n")) {
     const [marker, text] = splitOnce(line, " ");
 
     switch (marker) {
@@ -327,7 +330,7 @@ function readTestInfo(test_file: string): TestInfo | null {
   if (
     category === null ||
     points === null ||
-    source === null ||
+    source === "" ||
     !resultCodesAreValid(parser_codes, interpreter_codes)
   ) {
     return null;
@@ -377,36 +380,39 @@ class Test {
   }
 }
 
+function testIsExcluded(test: Test, args: CliArguments): boolean {
+  if (
+    args.exclude?.includes(test.def.name) ||
+    args.exclude_category?.includes(test.def.category) ||
+    args.exclude_test?.includes(test.def.name)
+  )
+    return true;
+
+  return false;
+}
+
+function testIsIncluded(test: Test, args: CliArguments): boolean {
+  if (
+    args.include?.includes(test.def.name) ||
+    args.include_category?.includes(test.def.category) ||
+    args.include_test?.includes(test.def.name)
+  )
+    return true;
+
+  return false;
+}
+
 function filterTest(test: Test, args: CliArguments): boolean {
-  if (args.include !== null)
-    if (!args.include.includes(test.def.name) && !args.include.includes(test.def.category)) {
-      return false;
-    }
+  if (testIsExcluded(test, args)) {
+    return false;
+  }
 
-  if (args.exclude !== null)
-    if (args.exclude.includes(test.def.name) || args.exclude.includes(test.def.category)) {
-      return false;
-    }
+  if (testIsIncluded(test, args)) {
+    return true;
+  }
 
-  if (args.include_test !== null)
-    if (!args.include_test.includes(test.def.name)) {
-      return false;
-    }
-
-  if (args.exclude_test !== null)
-    if (args.exclude_test.includes(test.def.name)) {
-      return false;
-    }
-
-  if (args.include_category !== null)
-    if (!args.include_category.includes(test.def.category)) {
-      return false;
-    }
-
-  if (args.exclude_category !== null)
-    if (args.exclude_category.includes(test.def.category)) {
-      return false;
-    }
+  if (args.include !== null || args.include_test !== null || args.include_category !== null)
+    return false;
 
   return true;
 }
@@ -438,7 +444,10 @@ function discoverTests(args: CliArguments): Test[] {
 
 const SOL2XML = resolve(import.meta.dirname, "../sol2xml/sol_to_xml.py");
 const SOLINT = resolve(import.meta.dirname, "../../int/src/solint.php");
-const TMP_XML = resolve(import.meta.dirname, "../.tmp.xml");
+
+function makeTempDir(): string {
+  return mkdtempSync(resolve(tmpdir(), "ipp-tester-"));
+}
 
 function executeTest(
   test: Test,
@@ -466,12 +475,14 @@ function executeTest(
 
   if (test.needsInterpreter()) {
     const source = parserResult?.stdout ?? test.source;
-    writeFileSync(TMP_XML, source, "utf8");
+    const temp_dir = makeTempDir();
+    const temp_file = join(temp_dir, "tmp.txt");
+    writeFileSync(temp_file, source, "utf8");
 
     const input_args = test.stdin_file !== null ? ["-i", test.stdin_file] : [];
 
     try {
-      interpreterResult = spawnSync("php", [SOLINT, "-s", TMP_XML, ...input_args], {
+      interpreterResult = spawnSync("php", [SOLINT, "-s", temp_file, ...input_args], {
         input: source,
         encoding: "utf8",
       });
@@ -483,8 +494,8 @@ function executeTest(
       return;
     }
 
-    if (test.expected_stdout_file !== null) {
-      diffResult = spawnSync("diff", [test.expected_stdout_file, "-"], {
+    if (interpreterResult.status === 0 && test.expected_stdout_file !== null) {
+      diffResult = spawnSync("diff", ["-", test.expected_stdout_file], {
         input: interpreterResult.stdout,
         encoding: "utf8",
       });
@@ -500,16 +511,16 @@ function getTestResult(
   interpreterResult: ReturnType<typeof spawnSync> | null,
   diffResult: ReturnType<typeof spawnSync> | null
 ): TestResult {
-  if (parserResult !== null && parserResult.status != null) {
-    if (!test.def.expected_parser_exit_codes?.includes(parserResult.status)) {
-      return TestResult.UNEXPECTED_PARSER_EXIT_CODE;
-    }
+  if (diffResult !== null && diffResult.status !== 0) {
+    return TestResult.INTERPRETER_RESULT_DIFFERS;
   } else if (interpreterResult !== null && interpreterResult.status != null) {
     if (!test.def.expected_interpreter_exit_codes?.includes(interpreterResult.status)) {
       return TestResult.UNEXPECTED_INTERPRETER_EXIT_CODE;
     }
-  } else if (diffResult !== null && diffResult.status !== 0) {
-    return TestResult.INTERPRETER_RESULT_DIFFERS;
+  } else if (parserResult !== null && parserResult.status != null) {
+    if (!test.def.expected_parser_exit_codes?.includes(parserResult.status)) {
+      return TestResult.UNEXPECTED_PARSER_EXIT_CODE;
+    }
   }
 
   return TestResult.PASSED;
@@ -574,6 +585,15 @@ function writeReport(
   );
 }
 
+function trimArgs(args: CliArguments): void {
+  args.include = args.include?.map((value) => value.trim()) ?? null;
+  args.include_category = args.include_category?.map((value) => value.trim()) ?? null;
+  args.include_test = args.include_test?.map((value) => value.trim()) ?? null;
+  args.exclude = args.exclude?.map((value) => value.trim()) ?? null;
+  args.exclude_category = args.exclude_category?.map((value) => value.trim()) ?? null;
+  args.exclude_test = args.exclude_test?.map((value) => value.trim()) ?? null;
+}
+
 function main(): void {
   /**
    * The main entry point for the SOL26 integration testing script.
@@ -587,6 +607,7 @@ function main(): void {
 
   // Parse the CLI arguments
   const args = parseArguments();
+  trimArgs(args);
 
   // Enable debug or info logging if the verbose flag was set twice or once
   if (args.verbose >= 2) {

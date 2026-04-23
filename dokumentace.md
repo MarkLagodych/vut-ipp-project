@@ -128,8 +128,8 @@ inherited (even though they cannot be defined in the current version of SOL).
 - `Dockerfile`:
     + fixed environment setup and code quality tool scripts
 - Tester:
-    + fix parser code reporting
-    + fix temporary file creation: now using a standard function instead of
+    + fixed diffing and test filtering
+    + fixed temporary file creation: now using a standard function instead of
         creating a hidden file in the script directory
 
 ## Future thoughts
